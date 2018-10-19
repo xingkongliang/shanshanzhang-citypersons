@@ -469,7 +469,7 @@ if __name__ == '__main__':
 
     image_set = 'train'
     citypersons = dataset_to_coco(image_set, citypersons_root)
-    # citypersons.show_dataset(vis=False)
+    citypersons.show_dataset(vis=False)
     coco_dict_trainval = citypersons.dataset_to_coco(is_train=True, vis=False)
     f = open(os.path.join(annotations_dir, 'citypersons_train.json'), 'w')
     f.write(json.dumps(coco_dict_trainval))
