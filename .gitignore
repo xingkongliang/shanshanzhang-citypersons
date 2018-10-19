@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Shared objects
+*.so
+
+# Distribution / packaging
+build/
+*.egg-info/
+*.egg
+
+# Temporary files
+*.swn
+*.swo
+*.swp
+
+
+# add by tianliang
+.idea
+res/*
+evaluation/res/*
+model/*
+img_output/*
+
+*.pdf
+*.png
+.ipynb_checkpoints
+
+
