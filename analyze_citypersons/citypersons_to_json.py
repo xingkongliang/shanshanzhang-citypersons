@@ -155,7 +155,8 @@ class dataset_to_coco():
         self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))
         self._image_ext = ['.jpg', '.png']
         self._anno_file = os.path.join(self._devkit_path, self._anno_dir, 'anno_{}.mat'.format(self._image_set))
-        self._images_files, self._image_index, self._annotations = self._load_image_set_index()
+        if self._image_set != 'test':
+            self._images_files, self._image_index, self._annotations = self._load_image_set_index()
 
         # print("Height: {}".format(self._hRng[0]))
         # print("Occlusion level: {}-{}".format(self._vRng[0], self._vRng[1]))
@@ -238,8 +239,8 @@ class dataset_to_coco():
 
             x1 = float(obj_dict['bb_pos'][0])
             y1 = float(obj_dict['bb_pos'][1])
-            x2 = float(obj_dict['bb_pos'][0] + obj_dict['bb_pos'][2] - 1)
-            y2 = float(obj_dict['bb_pos'][1] + obj_dict['bb_pos'][3] - 1)
+            x2 = float(obj_dict['bb_pos'][0] + obj_dict['bb_pos'][2])
+            y2 = float(obj_dict['bb_pos'][1] + obj_dict['bb_pos'][3])
             x1, y1, x2, y2 = utils.boxes.clip_xyxy_to_image(x1, y1, x2, y2, self._image_height, self._image_width)
             if x2 <= x1:
                 print('x2 < x1', x1, y1, x2, y2)
@@ -255,8 +256,8 @@ class dataset_to_coco():
             # for vis boxes
             xv1 = float(obj_dict['bb_posv'][0])
             yv1 = float(obj_dict['bb_posv'][1])
-            xv2 = float(obj_dict['bb_posv'][0] + obj_dict['bb_posv'][2] - 1)
-            yv2 = float(obj_dict['bb_posv'][1] + obj_dict['bb_posv'][3] - 1)
+            xv2 = float(obj_dict['bb_posv'][0] + obj_dict['bb_posv'][2])
+            yv2 = float(obj_dict['bb_posv'][1] + obj_dict['bb_posv'][3])
             xv1, yv1, xv2, yv2 = utils.boxes.clip_xyxy_to_image(xv1, yv1, xv2, yv2, self._image_height, self._image_width)
             if xv2 < xv1:
                 print('xv2 < xv1', xv1, yv1, xv2, yv2)
@@ -373,8 +374,8 @@ class dataset_to_coco():
 
             # annotations
             for j in range(len(anno['boxes'])):
-                if anno['gt_ignores'][j] == 1:
-                    continue
+                # if anno['gt_ignores'][j] == 1:
+                #     continue
 
                 x1, y1, w, h = anno['bb_pos'][j]
                 bb_pos = [int(x1), int(y1), int(w), int(h)]  # [x,y,width,height]
@@ -410,6 +411,56 @@ class dataset_to_coco():
         coco_dict[u'type'] = coco_type
 
         print('{} pedestrians.'.format(anno_id-1))
+        return coco_dict
+
+    def dataset_to_coco_test(self):
+        coco_dict = dict()
+        coco_dict[u'images'] = []
+
+        image_testset_path = os.path.join(self._data_path, 'leftImg8bit', self._image_set)
+        assert os.path.exists(image_testset_path)
+        # Test Json Format Example
+        # "images": [{"file_name": "frankfurt/frankfurt_000000_000294_leftImg8bit.png",
+        # "width": 2048, "id": 0, "height": 1024}]
+
+        image_list = []
+        dir_list = os.listdir(image_testset_path)
+        for dir_i in dir_list:
+            image_list_one = glob.glob("{}/{}/*.png".format(image_testset_path, dir_i))
+            print(dir_i, len(image_list_one))
+            image_list.extend(image_list_one)
+
+        image_list = sorted(image_list)
+
+        for image_id, image_full_path in enumerate(image_list):
+            cityname = image_full_path.split('/')[-2]
+            image_name = image_full_path.split('/')[-1]
+            image_name_with_city = os.path.join(cityname, image_name)
+
+            # images
+            image_dict = {u'file_name': image_name_with_city.decode('utf-8'),
+                          u'height': self._image_height,
+                          u'id': image_id,
+                          u'width': self._image_width}
+
+            coco_dict[u'images'].append(image_dict)
+        print('Num of Caltech Images: ', len(image_list))
+
+        ###
+        coco_info_dict = {u'contributor': u'CityPersons',
+                          u'date_created': u'2018-04-06 16:00:00',
+                          u'description': u'This is COCO Dataset version of CityPersons.',
+                          u'url': u'http://None',
+                          u'version': u'1.0',
+                          u'year': 2018}
+
+        coco_type = u'instances'
+        coco_categories = [{u'id': 1, u'name': u'pedestrian', u'supercategory': u'pedestrian'}]
+
+        coco_dict[u'info'] = coco_info_dict
+        coco_dict[u'categories'] = coco_categories
+        coco_dict[u'type'] = coco_type
+
         return coco_dict
 
     def bbs_decomposition(self, bbs):
@@ -478,10 +529,16 @@ if __name__ == '__main__':
     image_set = 'val'
     citypersons = dataset_to_coco(image_set, citypersons_root)
     citypersons.show_dataset(vis=False)
-    coco_dict_test = citypersons.dataset_to_coco(is_train=False, vis=False)
+    coco_dict_val = citypersons.dataset_to_coco(is_train=False, vis=False)
     f = open(os.path.join(annotations_dir, 'citypersons_val.json'), 'w')
-    f.write(json.dumps(coco_dict_test))
+    f.write(json.dumps(coco_dict_val))
     f.close()
 
+    image_set = 'test'
+    citypersons = dataset_to_coco(image_set, citypersons_root)
+    coco_dict_test = citypersons.dataset_to_coco_test()
+    f = open(os.path.join(annotations_dir, 'citypersons_test.json'), 'w')
+    f.write(json.dumps(coco_dict_test))
+    f.close()
 
     print('Done.')

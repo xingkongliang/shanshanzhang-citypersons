@@ -8,17 +8,9 @@ import os
 annType = 'bbox'      #specify type here
 # print('Running demo for *%s* results.'%(annType))
 
-#initialize COCO ground truth api
-# annFile = 'E:/cityscapes/CityPersons_annos/test_gt.json'
-# res_dir = '../../res/citypersons_1gpu_e2e_faster_rcnn_R-50-FPN_v1_13'
-
-res_dir = '../coco_citypersons_val_citypersons_1gpu_e2e_faster_rcnn_R-50-FPN_v1_13-239999_dt.json'
-i = 237
-# resFile = os.path.join(res_dir, "coco_citypersons_val_citypersons_1gpu_e2e_faster_rcnn_R-50-FPN_v1_13-{}999_dt.json".format(i))
+res_dir = '../res/coco_citypersons_val_citypersons_1gpu_e2e_faster_rcnn_R-50-FPN_v1_16-171999_dt.json'
 # res_dir = '../val_groundtruth_dt.json'
 annFile = '../val_gt.json'
-
-# initialize COCO detections api
 
 # running evaluation
 res_file = open("results.txt", "w")

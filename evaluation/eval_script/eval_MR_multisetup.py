@@ -100,7 +100,10 @@ class COCOeval_citypersons:
         for gt in gts:
             gt['ignore'] = gt['ignore'] if 'ignore' in gt else 0
             gt['ignore'] = 1 if (gt['height'] < self.params.HtRng[id_setup][0] or gt['height'] > self.params.HtRng[id_setup][1]) or \
-               ( gt['vis_ratio'] < self.params.VisRng[id_setup][0] or gt['vis_ratio'] > self.params.VisRng[id_setup][1]) else gt['ignore']
+                (gt['vis_ratio'] < self.params.VisRng[id_setup][0] or gt['vis_ratio'] >= self.params.VisRng[id_setup][1]) else gt['ignore']
+            # changed by tianliang, gt['vis_ratio'] >= self.params.VisRng[id_setup][1]
+            # old version below
+            #    ( gt['vis_ratio'] < self.params.VisRng[id_setup][0] or gt['vis_ratio'] > self.params.VisRng[id_setup][1]) else gt['ignore']
 
         self._gts = defaultdict(list)       # gt for evaluation
         self._dts = defaultdict(list)       # dt for evaluation
@@ -245,6 +248,7 @@ class COCOeval_citypersons:
         dtind = np.argsort([-d['score'] for d in dt], kind='mergesort')
         dt = [dt[i] for i in dtind[0:maxDet]]
         # exclude dt out of height range
+        # changed by tianliang
         indexes = []
         dt_tmp = []
         for idx, d in enumerate(dt):
