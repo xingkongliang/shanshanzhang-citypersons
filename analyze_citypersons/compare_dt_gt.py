@@ -15,8 +15,8 @@ import os
 import sys
 sys.path.insert(0, '../evaluation/eval_script')
 
-from coco_citypersons import COCO
-from eval_MR_multisetup import COCOeval
+from coco_citypersons import COCO_citypersons
+from eval_MR_multisetup import COCOeval_citypersons
 import tlutils
 
 _GRAY = (218, 227, 218)
@@ -34,9 +34,10 @@ print('Running demo for *%s* results.'%(annType))
 plot_ignore = True
 root = '/media/tianliang/Projects/Caffe2_Projects/detectron-data/citypersons/leftImg8bit'
 dataset = 'val'
-dt_file = '../evaluation/val_dt6.json'
+dt_file = '../res/val/citypersons_1gpu_e2e_faster_rcnn_R-50-FPN_v1_60/' \
+          'coco_citypersons_val_citypersons_1gpu_e2e_faster_rcnn_R-50-FPN_v1_60-69999_dt.json'
 gt_file = '../evaluation/val_gt.json'
-output_dir = '../img_output2'
+output_dir = '../img_output'
 id_setup = 0  # for reasonable
 dpi = 200
 
@@ -44,7 +45,7 @@ dts = json.load(open(dt_file, 'r'))
 gts = json.load(open(gt_file, 'r'))
 res_file = open("results.txt", "w")
 
-cocoGt = COCO(gt_file)
+cocoGt = COCO_citypersons(gt_file)
 cocoDt = cocoGt.loadRes(dt_file)
 catIds = cocoGt.getCatIds(catNms=['pedestrian'])
 imgIds_pedestrian = cocoGt.getImgIds(catIds=catIds)
@@ -76,8 +77,8 @@ for idx_img in imgIds_pedestrian:
         classes_boxes = ['pedestrian' if i == 0 else 'ignore' for i in ignore]
         color_classes = [_GREEN if i == 0 else _YELLOW for i in ignore]
 
-        out = tlutils.utils.vis.vis_one_image_opencv(im, bboxes, classes=classes_boxes,
-                                                     show_box=1, show_class=1, color=color_classes, line=3)
+        # out = tlutils.utils.vis.vis_one_image_opencv(im, bboxes, classes=classes_boxes,
+        #                                              show_box=1, show_class=1, color=color_classes, line=3)
 
     img_dt = cocoDt.loadImgs(imgIds[idx_img])[0]
     assert img_dt['im_name'] == img['im_name']
@@ -94,10 +95,10 @@ for idx_img in imgIds_pedestrian:
     color_classes_dt = [_RED for i in range(len(anns_dt))]
     if len(bbs) == 0:
         out_dt = tlutils.utils.vis.vis_one_image_opencv(im, bboxes_dt, classes=classes_boxes,
-                                                        show_box=1, show_class=0, color=color_classes_dt)
+                                                        show_box=1, show_class=0, color=color_classes_dt, line=5)
     else:
-        out_dt = tlutils.utils.vis.vis_one_image_opencv(out, bboxes_dt, classes=classes_boxes,
-                                                        show_box=1, show_class=0, color=color_classes_dt)
+        out_dt = tlutils.utils.vis.vis_one_image_opencv(im, bboxes_dt, classes=classes_boxes,
+                                                        show_box=1, show_class=0, color=color_classes_dt, line=5)
     output_name = os.path.basename(img['im_name']) + '.png'
     # plt.cla()
     # plt.axis('off')
@@ -114,6 +115,7 @@ for idx_img in imgIds_pedestrian:
     fig.add_axes(ax)
     ax.imshow(out_dt)
     fig.savefig(os.path.join(output_dir, output_name), dpi=dpi)
+    # plt.show()
     plt.close('all')
 
 
