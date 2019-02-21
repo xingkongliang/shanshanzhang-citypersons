@@ -77,8 +77,8 @@ for idx_img in imgIds_pedestrian:
         classes_boxes = ['pedestrian' if i == 0 else 'ignore' for i in ignore]
         color_classes = [_GREEN if i == 0 else _YELLOW for i in ignore]
 
-        # out = tlutils.utils.vis.vis_one_image_opencv(im, bboxes, classes=classes_boxes,
-        #                                              show_box=1, show_class=1, color=color_classes, line=3)
+        out = tlutils.utils.vis.vis_one_image_opencv(im, bboxes, classes=classes_boxes,
+                                                     show_box=1, show_class=1, color=color_classes, line=3)
 
     img_dt = cocoDt.loadImgs(imgIds[idx_img])[0]
     assert img_dt['im_name'] == img['im_name']
@@ -94,10 +94,10 @@ for idx_img in imgIds_pedestrian:
     classes_boxes = ['pedestrian' for i in range(len(anns_dt))]
     color_classes_dt = [_RED for i in range(len(anns_dt))]
     if len(bbs) == 0:
-        out_dt = tlutils.utils.vis.vis_one_image_opencv(im, bboxes_dt, classes=classes_boxes,
+        out_dt = tlutils.utils.vis.vis_one_image_opencv(out, bboxes_dt, classes=classes_boxes,
                                                         show_box=1, show_class=0, color=color_classes_dt, line=5)
     else:
-        out_dt = tlutils.utils.vis.vis_one_image_opencv(im, bboxes_dt, classes=classes_boxes,
+        out_dt = tlutils.utils.vis.vis_one_image_opencv(out, bboxes_dt, classes=classes_boxes,
                                                         show_box=1, show_class=0, color=color_classes_dt, line=5)
     output_name = os.path.basename(img['im_name']) + '.png'
     # plt.cla()

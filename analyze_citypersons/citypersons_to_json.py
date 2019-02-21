@@ -386,6 +386,7 @@ class dataset_to_coco():
                 annotation_dict = {u'segmentation': [[]],
                                    u'area': int(anno['seg_areas'][j]),
                                    u'iscrowd': 0,  #
+                                   # TODO: u'image_id': image_id+1, fix this bug
                                    u'image_id': image_id,
                                    u'bbox': bb_pos,   # [x,y,width,height]
                                    u'posv': bb_posv,  # [x,y,width,height]
