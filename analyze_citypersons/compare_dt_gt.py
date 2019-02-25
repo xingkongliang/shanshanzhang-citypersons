@@ -34,8 +34,7 @@ print('Running demo for *%s* results.'%(annType))
 plot_ignore = True
 root = '/media/tianliang/Projects/Caffe2_Projects/detectron-data/citypersons/leftImg8bit'
 dataset = 'val'
-dt_file = '../res/val/citypersons_1gpu_e2e_faster_rcnn_R-50-FPN_v1_60/' \
-          'coco_citypersons_val_citypersons_1gpu_e2e_faster_rcnn_R-50-FPN_v1_60-69999_dt.json'
+dt_file = '../res/val/e2e_faster_rcnn_R_50_C4_1x_1_gpu_citypersons_v9_01/25000/bbox.json'
 gt_file = '../evaluation/val_gt.json'
 output_dir = '../img_output'
 id_setup = 0  # for reasonable
@@ -95,10 +94,10 @@ for idx_img in imgIds_pedestrian:
     color_classes_dt = [_RED for i in range(len(anns_dt))]
     if len(bbs) == 0:
         out_dt = tlutils.utils.vis.vis_one_image_opencv(out, bboxes_dt, classes=classes_boxes,
-                                                        show_box=1, show_class=0, color=color_classes_dt, line=5)
+                                                        show_box=1, show_class=0, color=color_classes_dt, line=3)
     else:
         out_dt = tlutils.utils.vis.vis_one_image_opencv(out, bboxes_dt, classes=classes_boxes,
-                                                        show_box=1, show_class=0, color=color_classes_dt, line=5)
+                                                        show_box=1, show_class=0, color=color_classes_dt, line=3)
     output_name = os.path.basename(img['im_name']) + '.png'
     # plt.cla()
     # plt.axis('off')

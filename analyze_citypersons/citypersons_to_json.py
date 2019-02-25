@@ -19,6 +19,7 @@ import scipy.sparse
 import time
 import scipy.io as sio
 import tlutils.utils as utils
+from six.moves import xrange
 
 """
 CityPersons annotations
@@ -126,6 +127,7 @@ def clip_xyxy_to_image(x1, y1, x2, y2, height, width):
     y2 = np.minimum(height - 1., np.maximum(0., y2))
     return x1, y1, x2, y2
 
+
 class dataset_to_coco():
     def __init__(self, image_set, devkit_path):
         self._name = 'citypersons_' + image_set
@@ -145,8 +147,11 @@ class dataset_to_coco():
         # self._vRng = [0.2, 1]             # heavy occlusion, acceptable obj occlusion levels
         # self._vRng = [0.42, 1]              # heavy occlusion, acceptable obj occlusion levels
         self._squarify = None          # controls optional reshaping of bbs to fixed aspect ratio
-        self._hRng = None              # acceptable obj heights
-        self._vRng = [0.2, 1]              # acceptable obj occlusion levels
+        # self._hRng = None              # acceptable obj heights
+        # self._vRng = [0.2, 1]              # acceptable obj occlusion levels
+        # For CityPersons
+        self._hRng = [20, np.inf]              # acceptable obj heights
+        self._vRng = [0.50, 1]              # acceptable obj occlusion levels
 
         self._data_path = os.path.join(self._devkit_path)
 
@@ -360,13 +365,13 @@ class dataset_to_coco():
             image_name = '{}.png'.format(idx)
             image_file = self.image_path_from_index(idx)
 
-            if (count % 100 == 0) and vis and anno['boxes'].shape[0] != 0:
+            if (count % 10 == 0) and vis and anno['boxes'].shape[0] != 0:
                 check_anno(anno, image_file)
 
             count += 1
 
             # images
-            image_dict = {u'file_name': image_name.decode('utf-8'),
+            image_dict = {u'file_name': image_name,  # image_name.decode('utf-8'),
                           u'height': self._image_height,
                           u'id': image_id,
                           u'width': self._image_width}
@@ -523,23 +528,23 @@ if __name__ == '__main__':
     citypersons = dataset_to_coco(image_set, citypersons_root)
     citypersons.show_dataset(vis=False)
     coco_dict_trainval = citypersons.dataset_to_coco(is_train=True, vis=False)
-    f = open(os.path.join(annotations_dir, 'citypersons_train.json'), 'w')
+    f = open(os.path.join(annotations_dir, 'citypersons_o50h20_train.json'), 'w')
     f.write(json.dumps(coco_dict_trainval))
     f.close()
 
-    image_set = 'val'
-    citypersons = dataset_to_coco(image_set, citypersons_root)
-    citypersons.show_dataset(vis=False)
-    coco_dict_val = citypersons.dataset_to_coco(is_train=False, vis=False)
-    f = open(os.path.join(annotations_dir, 'citypersons_val.json'), 'w')
-    f.write(json.dumps(coco_dict_val))
-    f.close()
-
-    image_set = 'test'
-    citypersons = dataset_to_coco(image_set, citypersons_root)
-    coco_dict_test = citypersons.dataset_to_coco_test()
-    f = open(os.path.join(annotations_dir, 'citypersons_test.json'), 'w')
-    f.write(json.dumps(coco_dict_test))
-    f.close()
+    # image_set = 'val'
+    # citypersons = dataset_to_coco(image_set, citypersons_root)
+    # citypersons.show_dataset(vis=False)
+    # coco_dict_val = citypersons.dataset_to_coco(is_train=False, vis=False)
+    # f = open(os.path.join(annotations_dir, 'citypersons_val.json'), 'w')
+    # f.write(json.dumps(coco_dict_val))
+    # f.close()
+    #
+    # image_set = 'test'
+    # citypersons = dataset_to_coco(image_set, citypersons_root)
+    # coco_dict_test = citypersons.dataset_to_coco_test()
+    # f = open(os.path.join(annotations_dir, 'citypersons_test.json'), 'w')
+    # f.write(json.dumps(coco_dict_test))
+    # f.close()
 
     print('Done.')
