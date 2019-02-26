@@ -7,23 +7,38 @@ import os
 
 annType = 'bbox'      #specify type here
 # print('Running demo for *%s* results.'%(annType))
+iterations = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
+version = 'v3_01'
 
-res_dir = '../res/coco_citypersons_val_citypersons_1gpu_e2e_faster_rcnn_R-50-FPN_v1_16-171999_dt.json'
-# res_dir = '../val_groundtruth_dt.json'
-annFile = '../val_gt.json'
+# iteration = 30000
+for iteration in iterations:
+    print(version, iteration)
+    val_dataset = 'citypersons_o20h20_val'
+    root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark/Output/inference'
+    cfg_file = "e2e_faster_rcnn_R_50_C4_1x_1_gpu_citypersons_{}".format(version)
 
-# running evaluation
-res_file = open("results.txt", "w")
-for id_setup in range(0, 8):
-    cocoGt = COCO_citypersons(annFile)
-    cocoDt = cocoGt.loadRes(res_dir)
-    imgIds = sorted(cocoGt.getImgIds())
-    cocoEval = COCOeval_citypersons(cocoGt, cocoDt, annType)
-    cocoEval.params.imgIds = imgIds
-    cocoEval.evaluate(id_setup)
-    cocoEval.accumulate()
-    cocoEval.summarize(id_setup, res_file)
-
-res_file.close()
+    res_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox.json')
+    # res_dir = '../val_groundtruth_dt.json'
+    annFile = '../val_gt.json'
+    output_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox_2.txt')
+    # running evaluation
+    res_file = open(output_dir, "w")
+    res = []
+    for id_setup in range(0, 11):
+        cocoGt = COCO_citypersons(annFile)
+        cocoDt = cocoGt.loadRes(res_dir)
+        imgIds = sorted(cocoGt.getImgIds())
+        cocoEval = COCOeval_citypersons(cocoGt, cocoDt, annType)
+        cocoEval.params.imgIds = imgIds
+        cocoEval.evaluate(id_setup)
+        cocoEval.accumulate()
+        out = cocoEval.summarize(id_setup, res_file)
+        res.append(out)
+    for r in res:
+            print(r.split(' ')[-1][:-1])
+            res_file.write(r.split(' ')[-1][:-1])
+            res_file.write('\n')
+    res_file.close()
+    print(30*'-')
 
 

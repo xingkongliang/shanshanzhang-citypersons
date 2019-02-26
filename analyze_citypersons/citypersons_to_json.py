@@ -150,8 +150,8 @@ class dataset_to_coco():
         # self._hRng = None              # acceptable obj heights
         # self._vRng = [0.2, 1]              # acceptable obj occlusion levels
         # For CityPersons
-        self._hRng = [20, np.inf]              # acceptable obj heights
-        self._vRng = [0.50, 1]              # acceptable obj occlusion levels
+        self._hRng = [40, np.inf]              # acceptable obj heights
+        self._vRng = [0.30, 1.0]              # acceptable obj occlusion levels
 
         self._data_path = os.path.join(self._devkit_path)
 
@@ -528,7 +528,7 @@ if __name__ == '__main__':
     citypersons = dataset_to_coco(image_set, citypersons_root)
     citypersons.show_dataset(vis=False)
     coco_dict_trainval = citypersons.dataset_to_coco(is_train=True, vis=False)
-    f = open(os.path.join(annotations_dir, 'citypersons_o50h20_train.json'), 'w')
+    f = open(os.path.join(annotations_dir, 'citypersons_o30h40_train.json'), 'w')
     f.write(json.dumps(coco_dict_trainval))
     f.close()
 

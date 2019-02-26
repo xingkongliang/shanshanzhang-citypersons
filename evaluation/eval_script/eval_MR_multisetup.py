@@ -248,7 +248,6 @@ class COCOeval_citypersons:
         dtind = np.argsort([-d['score'] for d in dt], kind='mergesort')
         dt = [dt[i] for i in dtind[0:maxDet]]
         # exclude dt out of height range
-        # changed by tianliang
         indexes = []
         dt_tmp = []
         for idx, d in enumerate(dt):
@@ -442,7 +441,7 @@ class COCOeval_citypersons:
         '''
         def _summarize(iouThr=None, maxDets=100 ):
             p = self.params
-            iStr = ' {:<18} {} @ {:<18} [ IoU={:<9} | height={:>6s} | visibility={:>6s} ] = {:0.2f}%'
+            iStr = " {:<18} {} @ {:<18} [ IoU={:<9} | height={:>6s} | visibility={:>6s} ] = {:0.2f}%"
             titleStr = 'Average Miss Rate'
             typeStr = '(MR)'
             setupStr = p.SetupLbl[id_setup]
@@ -470,14 +469,15 @@ class COCOeval_citypersons:
             print(iStr.format(titleStr, typeStr,setupStr, iouStr, heightStr, occlStr, mean_s*100))
             res_file.write(iStr.format(titleStr, typeStr,setupStr, iouStr, heightStr, occlStr, mean_s*100))
             res_file.write('\n')
-            return mean_s
+            return iStr.format(titleStr, typeStr,setupStr, iouStr, heightStr, occlStr, mean_s*100)
 
         if not self.eval:
             raise Exception('Please run accumulate() first')
-        _summarize(iouThr=.5,maxDets=1000)
+        return _summarize(iouThr=.5,maxDets=1000)
 
     def __str__(self):
         self.summarize()
+
 
 class Params:
     '''
@@ -485,7 +485,7 @@ class Params:
     '''
     def setDetParams(self):
         self.imgIds = []
-        self.catIds = [2]
+        self.catIds = []
         # np.arange causes trouble.  the data point on arange is slightly larger than the true value
 
         self.recThrs = np.linspace(.0, 1.00, np.round((1.00 - .0) / .01) + 1, endpoint=True)
@@ -497,11 +497,14 @@ class Params:
         self.iouThrs = np.array([0.5])  # np.linspace(.5, 0.95, np.round((0.95 - .5) / .05) + 1, endpoint=True)
 
         self.HtRng = [[50, 1e5 ** 2], [50,75], [50, 1e5 ** 2], [20, 1e5 ** 2],
-                      [50, 1e5 ** 2], [50, 1e5 ** 2], [50, 1e5 ** 2], [50, 1e5 ** 2]]
+                      [50, 1e5 ** 2], [50, 1e5 ** 2], [50, 1e5 ** 2], [50, 1e5 ** 2],
+                      [50, 1e5 ** 2], [50, 1e5 ** 2], [50, 1e5 ** 2]]
         self.VisRng = [[0.65, 1e5 ** 2], [0.65, 1e5 ** 2], [0.2,0.65], [0.2, 1e5 ** 2],
-                       [0.2, 1e5 ** 2], [1, 1e5 ** 2], [0.65, 1], [0.2, 0.65]]
-        self.SetupLbl = ['Reasonable', 'Reasonable_small','Reasonable_occ=heavy', 'All',
-                         'All-50', 'R_occ=None', 'R_occ=Partial', 'R_occ=heaavy']
+                       [0.2, 1e5 ** 2], [1, 1e5 ** 2], [0.65, 1.0], [0.2, 0.65],
+                       [0, 0.65], [0.65, 0.90], [0.90, 1.0]]
+        self.SetupLbl = ['Reasonable', 'Reasonable_small', 'Reasonable_occ=heavy', 'All',
+                         'All-50', 'R_occ=None', 'R_occ=Partial', 'R_occ=heaavy',
+                         'Heavy', 'Partial', 'Bare']
 
 
     def __init__(self, iouType='segm'):
