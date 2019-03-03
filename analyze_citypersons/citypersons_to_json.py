@@ -111,12 +111,14 @@ def check_anno(anno, im_file):
         ax.text(bbox[0], bbox[1] - 2,
                 '{:s}'.format(class_name),
                 bbox=dict(facecolor='blue', alpha=0.5),
-                fontsize=14, color='white')
+                fontsize=10, color='white')
     ax.set_title(('{} detections {}').format('pedestrian', im_file.split('/')[-1]),
                   fontsize=14)
     plt.axis('off')
     plt.tight_layout()
     plt.show()
+    plt.pause(1)
+    plt.close()
 
 
 def clip_xyxy_to_image(x1, y1, x2, y2, height, width):
@@ -139,7 +141,9 @@ class dataset_to_coco():
         self._images_dir = 'leftImg8bit'
         self._citypersons_classes = ['ignore', 'pedestrians', 'riders', 'sitting-persons', 'other', 'people']
         self._lbls = ['pedestrians']         # return objs with these labels (or [] to return all)
-        self._ilbls = ['ignore', 'riders', 'sitting-persons', 'other', 'people']  # return objs with these labels but set to ignore
+        # self._ilbls = ['ignore', 'riders', 'sitting-persons', 'other', 'people']  # return objs with these labels but set to ignore
+        # remote sitting-persons, set it as negative
+        self._ilbls = ['ignore', 'riders', 'other', 'people']  # return objs with these labels but set to ignore
         # self._squarify = [0.41]             # controls optional reshaping of bbs to fixed aspect ratio
         # self._hRng = [30, np.inf]           # acceptable obj heights
         # self._vRng = [1, 1]               # no occlusion, acceptable obj occlusion levels
@@ -528,7 +532,7 @@ if __name__ == '__main__':
     citypersons = dataset_to_coco(image_set, citypersons_root)
     citypersons.show_dataset(vis=False)
     coco_dict_trainval = citypersons.dataset_to_coco(is_train=True, vis=False)
-    f = open(os.path.join(annotations_dir, 'citypersons_o20h40_train.json'), 'w')
+    f = open(os.path.join(annotations_dir, 'citypersons_o30h40_train_without_sitting.json'), 'w')
     f.write(json.dumps(coco_dict_trainval))
     f.close()
 

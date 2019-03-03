@@ -32,11 +32,17 @@ _ORANGE = (255, 165, 0)
 annType = 'bbox'      #specify type here
 print('Running demo for *%s* results.'%(annType))
 plot_ignore = True
+version = 'v18_01'
 root = '/media/tianliang/Projects/Caffe2_Projects/detectron-data/citypersons/leftImg8bit'
 dataset = 'val'
-dt_file = '../res/val/e2e_faster_rcnn_R_50_C4_1x_1_gpu_citypersons_v9_01/25000/bbox.json'
-gt_file = '../evaluation/val_gt.json'
-output_dir = '../img_output'
+project_dir = os.path.dirname(os.path.dirname(__file__))
+print("project dir: ", project_dir)
+
+dt_file = os.path.join(project_dir, "res/val/e2e_faster_rcnn_R_50_C4_1x_1_gpu_citypersons_{}/citypersons_o20h20_val/30000/bbox.json".format(version))
+gt_file = os.path.join(project_dir, 'evaluation/val_gt.json')
+output_dir = os.path.join(project_dir, 'img_output', version)
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 id_setup = 0  # for reasonable
 dpi = 200
 
