@@ -271,44 +271,45 @@ class COCOeval_citypersons:
         T = len(p.iouThrs)
         G = len(gt)
         D = len(dt)
-        gtm  = np.zeros((T,G))
-        dtm  = np.zeros((T,D))
-        gtIg = np.array([g['_ignore'] for g in gt])
-        dtIg = np.zeros((T,D))
+        gtm  = np.zeros((T,G))  # ground truth 匹配是否匹配 标志位
+        dtm  = np.zeros((T,D))  # detection 匹配是否匹配 标志位
+        gtIg = np.array([g['_ignore'] for g in gt])  # ground truth 忽略 标志位
+        dtIg = np.zeros((T,D))  # detection 忽略 标志位
         if not len(ious)==0:
             for tind, t in enumerate(p.iouThrs):
                 for dind, d in enumerate(dt):
                     # information about best match so far (m=-1 -> unmatched)
                     iou = min([t,1-1e-10])
                     bstOa = iou
-                    bstg = -2
-                    bstm = -2
+                    bstg = -2  # 最好匹配的 gt 序号
+                    bstm = -2  # 找到了最好的匹配
                     for gind, g in enumerate(gt):
-                        m = gtm[tind,gind]
+                        m = gtm[tind,gind]  # 第 gind 个 ground truth 的匹配标志位
                         # if this gt already matched, and not a crowd, continue
-                        if m>0:
+                        if m>0:                       # 如果这个 ground truth 被匹配了 跳到下一个ground truth
                             continue
                         # if dt matched to reg gt, and on ignore gt, stop
-                        if bstm!=-2 and gtIg[gind] == 1:
+                        if bstm!=-2 and gtIg[gind] == 1:  # 如果 dt 被匹配到了 gt 并且 比配到了忽略的 gt 则停止
                             break
                         # continue to next gt unless better match made
-                        if ious[dind,gind] < bstOa:
+                        if ious[dind,gind] < bstOa:   # 继续下一个 gt 直到更好的匹配 即遇到更大的IoU
                             continue
                         # if match successful and best so far, store appropriately
-                        bstOa=ious[dind,gind]
-                        bstg = gind
-                        if gtIg[gind] == 0:
-                            bstm = 1
+                        # 如果匹配成功 并且匹配到了当前最好的结果 存储结果
+                        bstOa=ious[dind,gind]         # 把最好的IoU赋值给bstOa
+                        bstg = gind                   # 把当前的gt的序号 赋值给 bstg
+                        if gtIg[gind] == 0:           # 如果当前gt 不是被忽略的
+                            bstm = 1                  # 则将 bstm 置 1
                         else:
-                            bstm = -1
+                            bstm = -1                 # 如果当前gt 是忽略的 则将 bstm 置 -1
 
                     # if match made store id of match for both dt and gt
-                    if bstg ==-2:
+                    if bstg ==-2:                     # 没有找到gt与之匹配 则跳出当前dt
                         continue
-                    dtIg[tind,dind] = gtIg[bstg]
-                    dtm[tind,dind]  = gt[bstg]['id']
-                    if bstm == 1:
-                        gtm[tind,bstg]     = d['id']
+                    dtIg[tind,dind] = gtIg[bstg]      # 把当前检测结果标志 是否 忽略
+                    dtm[tind,dind]  = gt[bstg]['id']  # 检测结果匹配的 gt 的 id
+                    if bstm == 1:                     # 找到最好匹配
+                        gtm[tind,bstg]     = d['id']  # gt 匹配标志位 置为 检测结果的id
 
         # store results for given image and category
         return {
