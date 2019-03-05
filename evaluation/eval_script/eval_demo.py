@@ -22,7 +22,7 @@ annType = 'bbox'      #specify type here
 # print('Running demo for *%s* results.'%(annType))
 # iterations = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
 iterations = [30000]
-version = 'v16_01'
+version = 'v18_01'
 
 # iteration = 30000
 for iteration in iterations:
@@ -45,7 +45,7 @@ for iteration in iterations:
         cocoEval = COCOeval_citypersons(cocoGt, cocoDt, annType)
         cocoEval.params.imgIds = imgIds
         cocoEval.evaluate(id_setup)
-        cocoEval.accumulate()
+        cocoEval.accumulate(id_setup)
         out = cocoEval.summarize(id_setup, res_file)
         res.extend(out)
     for cls in classes:

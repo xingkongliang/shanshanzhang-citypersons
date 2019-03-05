@@ -355,7 +355,65 @@ class COCOeval_citypersons:
                 'dt_error_type': dt_error_type,
             }
 
-    def accumulate(self, p = None):
+    def calc_detection_voc_ae(self, prec, rec, use_07_metric=False):
+        """Calculate average precisions based on evaluation code of PASCAL VOC.
+        This function calculates average precisions
+        from given precisions and recalls.
+        The code is based on the evaluation code used in PASCAL VOC Challenge.
+        Args:
+            prec (list of numpy.array): A list of arrays.
+                :obj:`prec[l]` indicates precision for class :math:`l`.
+                If :obj:`prec[l]` is :obj:`None`, this function returns
+                :obj:`numpy.nan` for class :math:`l`.
+            rec (list of numpy.array): A list of arrays.
+                :obj:`rec[l]` indicates recall for class :math:`l`.
+                If :obj:`rec[l]` is :obj:`None`, this function returns
+                :obj:`numpy.nan` for class :math:`l`.
+            use_07_metric (bool): Whether to use PASCAL VOC 2007 evaluation metric
+                for calculating average precision. The default value is
+                :obj:`False`.
+        Returns:
+            ~numpy.ndarray:
+            This function returns an array of average precisions.
+            The :math:`l`-th value corresponds to the average precision
+            for class :math:`l`. If :obj:`prec[l]` or :obj:`rec[l]` is
+            :obj:`None`, the corresponding value is set to :obj:`numpy.nan`.
+        """
+
+        n_fg_class = len(prec)
+        ae = np.empty(n_fg_class)
+        for l in range(n_fg_class):
+            if prec[l] is None or rec[l] is None:
+                ae[l] = np.nan
+                continue
+
+            if use_07_metric:
+                # 11 point metric
+                ae[l] = 0
+                for t in np.arange(0.0, 1.1, 0.1):
+                    if np.sum(rec[l] >= t) == 0:
+                        p = 0
+                    else:
+                        p = np.max(np.nan_to_num(prec[l])[rec[l] >= t])
+                    ae[l] += p / 11
+            else:
+                # correct AP calculation
+                # first append sentinel values at the end
+                mpre = np.concatenate(([0], np.nan_to_num(prec[l]), [0]))
+                mrec = np.concatenate(([0], rec[l], [1]))
+
+                mpre = np.maximum.accumulate(mpre[::-1])[::-1]
+
+                # to calculate area under PR curve, look for points
+                # where X axis (recall) changes value
+                i = np.where(mrec[1:] != mrec[:-1])[0]
+
+                # and sum (\Delta recall) * prec
+                ae[l] = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+
+        return ae
+
+    def accumulate(self, id_setup, p = None):
         '''
         Accumulate per image evaluation results and store the result in self.eval
         :param p: input params for evaluation
@@ -375,12 +433,12 @@ class COCOeval_citypersons:
         K           = len(p.catIds) if p.useCats else 1
         M           = len(p.maxDets)
         ys   = -np.ones((T,R,K,M)) # -1 for the precision of absent categories
-        ys_double_detections_error_rate = -np.ones((T,RECALL,K,M))
-        ys_crowded_error_rate = -np.ones((T,RECALL,K,M))
-        ys_larger_bbs_error_rate = -np.ones((T,RECALL,K,M))
-        ys_body_parts_error_rate = -np.ones((T,RECALL,K,M))
-        ys_background_error_rate = -np.ones((T,RECALL,K,M))
-        ys_others_error_rate = -np.ones((T,RECALL,K,M))
+        ys_double_detections_error_ae = -np.ones((T,1,K,M))
+        ys_crowded_error_ae = -np.ones((T,1,K,M))
+        ys_larger_bbs_error_ae = -np.ones((T,1,K,M))
+        ys_body_parts_error_ae = -np.ones((T,1,K,M))
+        ys_background_error_ae = -np.ones((T,1,K,M))
+        ys_others_error_ae = -np.ones((T,1,K,M))
 
         ys_double_detections_error = -np.ones((T,RECALL,K,M))
         ys_crowded_error = -np.ones((T,RECALL,K,M))
@@ -469,21 +527,20 @@ class COCOeval_citypersons:
                     fppi = np.array(fp)/I0
                     nd = len(tp)
                     recall = tp / npig
-                    double_detections_error_rate = double_detections_error / npig
-                    crowded_error_rate = crowded_error / npig
-                    larger_bbs_error_rate = larger_bbs_error / npig
-                    body_parts_error_rate = body_parts_error / npig
-                    background_error_rate = background_error / npig
-                    others_error_rate = others_error / npig
+                    double_detections_error_rate = double_detections_error / (tp+fp)
+                    crowded_error_rate = crowded_error / (tp+fp)
+                    larger_bbs_error_rate = larger_bbs_error / (tp+fp)
+                    body_parts_error_rate = body_parts_error / (tp+fp)
+                    background_error_rate = background_error / (tp+fp)
+                    others_error_rate = others_error / (tp+fp)
+
+                    double_detections_error_ae = self.calc_detection_voc_ae([double_detections_error_rate], [recall], use_07_metric=True)
+                    crowded_error_ae = self.calc_detection_voc_ae([crowded_error_rate], [recall], use_07_metric=True)
+                    larger_bbs_error_ae = self.calc_detection_voc_ae([larger_bbs_error_rate], [recall], use_07_metric=True)
+                    body_parts_error_ae = self.calc_detection_voc_ae([body_parts_error_rate], [recall], use_07_metric=True)
+                    background_error_ae = self.calc_detection_voc_ae([background_error_rate], [recall], use_07_metric=True)
 
                     q = np.zeros((R,))
-                    q_double_detections_error_rate = np.zeros((RECALL,))
-                    q_crowded_error_rate = np.zeros((RECALL,))
-                    q_larger_bbs_error_rate = np.zeros((RECALL,))
-                    q_body_parts_error_rate = np.zeros((RECALL,))
-                    q_background_error_rate = np.zeros((RECALL,))
-                    q_others_error_rate = np.zeros((RECALL,))
-
                     q_double_detections_error = np.zeros((RECALL,))
                     q_crowded_error = np.zeros((RECALL,))
                     q_larger_bbs_error = np.zeros((RECALL,))
@@ -501,13 +558,6 @@ class COCOeval_citypersons:
                     others_error = others_error.tolist()
 
                     recall = recall.tolist()
-                    double_detections_error_rate = double_detections_error_rate.tolist()
-                    crowded_error_rate = crowded_error_rate.tolist()
-                    larger_bbs_error_rate = larger_bbs_error_rate.tolist()
-                    body_parts_error_rate = body_parts_error_rate.tolist()
-                    background_error_rate = background_error_rate.tolist()
-                    others_error_rate = others_error_rate.tolist()
-
                     q = q.tolist()
                     q_double_detections_error = q_double_detections_error.tolist()
                     q_crowded_error = q_crowded_error.tolist()
@@ -516,31 +566,15 @@ class COCOeval_citypersons:
                     q_background_error = q_background_error.tolist()
                     q_others_error = q_others_error.tolist()
 
-                    q_double_detections_error_rate = q_double_detections_error_rate.tolist()
-                    q_crowded_error_rate = q_crowded_error_rate.tolist()
-                    q_larger_bbs_error_rate = q_larger_bbs_error_rate.tolist()
-                    q_body_parts_error_rate = q_body_parts_error_rate.tolist()
-                    q_background_error_rate = q_background_error_rate.tolist()
-                    q_others_error_rate = q_others_error_rate.tolist()
-
                     for i in range(nd - 1, 0, -1):
                         if recall[i] < recall[i - 1]:
                             recall[i - 1] = recall[i]
-                    vis = False
-                    if vis == True:
-                        plt.plot(fppi, 1-np.array(recall))
-                        plt.grid()
-                        plt.xlabel('fppi')
-                        plt.ylabel('miss rate')
-                        # plt.xlim((0, 10))
-                        # plt.ylim((0, 1))
-                        my_y_ticks = np.array([.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.64, 0.8, 1])
-                        # my_x_ticks = np.array([1e-4, 1e-2, 1e-2, 1e-1, 1e1])
-                        # plt.xticks(my_x_ticks)
-                        plt.yticks(my_y_ticks)
-                        plt.show()
                     inds = np.searchsorted(fppi, p.fppiThrs, side='right') - 1
                     inds_recall = np.searchsorted(recall, [0.1*i for i in range(1, 11)], side='right') - 1
+                    # plt.plot(np.arange(len(background_error_rate)), background_error_rate)
+                    # plt.plot(inds_recall, np.zeros((len(inds_recall))), 'b*')
+                    # plt.title("{}: background_error_rate".format(p.SetupLbl[id_setup]))
+                    # plt.show()
                     try:
                         for ri, pi in enumerate(inds):
                             q[ri] = recall[pi]
@@ -551,46 +585,35 @@ class COCOeval_citypersons:
                             q_body_parts_error[ri] = body_parts_error[pi]
                             q_background_error[ri] = background_error[pi]
                             q_others_error[ri] = others_error[pi]
-
-                            q_double_detections_error_rate[ri] = double_detections_error_rate[pi]
-                            q_crowded_error_rate[ri] = crowded_error_rate[pi]
-                            q_larger_bbs_error_rate[ri] = larger_bbs_error_rate[pi]
-                            q_body_parts_error_rate[ri] = body_parts_error_rate[pi]
-                            q_background_error_rate[ri] = background_error_rate[pi]
-                            q_others_error_rate[ri] = others_error_rate[pi]
                     except:
                         pass
                     ys[t,:,k,m] = np.array(q)
-                    ys_double_detections_error_rate[t,:,k,m] = np.array(q_double_detections_error_rate)
-                    ys_crowded_error_rate[t,:,k,m] = np.array(q_crowded_error_rate)
-                    ys_larger_bbs_error_rate[t,:,k,m] = np.array(q_larger_bbs_error_rate)
-                    ys_body_parts_error_rate[t,:,k,m] = np.array(q_body_parts_error_rate)
-                    ys_background_error_rate[t,:,k,m] = np.array(q_background_error_rate)
-                    ys_others_error_rate[t,:,k,m] = np.array(q_others_error)
+                    ys_double_detections_error_ae[t,:,k,m] = np.array(double_detections_error_ae)
+                    ys_crowded_error_ae[t,:,k,m] = np.array(crowded_error_ae)
+                    ys_larger_bbs_error_ae[t,:,k,m] = np.array(larger_bbs_error_ae)
+                    ys_body_parts_error_ae[t,:,k,m] = np.array(body_parts_error_ae)
+                    ys_background_error_ae[t,:,k,m] = np.array(background_error_ae)
 
                     ys_double_detections_error[t,:,k,m] = np.array(q_double_detections_error)
                     ys_crowded_error[t,:,k,m] = np.array(q_crowded_error)
                     ys_larger_bbs_error[t,:,k,m] = np.array(q_larger_bbs_error)
                     ys_body_parts_error[t,:,k,m] = np.array(q_body_parts_error)
                     ys_background_error[t,:,k,m] = np.array(q_background_error)
-                    ys_others_error[t,:,k,m] = np.array(q_others_error)
         self.eval = {
             'params': p,
             'counts': [T, R, K, M],
             'date': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'TP':   ys,
-            'double_detections_error_rate': ys_double_detections_error_rate,
-            'crowded_error_rate': ys_crowded_error_rate,
-            'larger_bbs_error_rate': ys_larger_bbs_error_rate,
-            'body_parts_error_rate': ys_body_parts_error_rate,
-            'background_error_rate': ys_background_error_rate,
-            'others_error_rate': ys_others_error_rate,
+            'double_detections_error_ae': ys_double_detections_error_ae,
+            'crowded_error_ae': ys_crowded_error_ae,
+            'larger_bbs_error_ae': ys_larger_bbs_error_ae,
+            'body_parts_error_ae': ys_body_parts_error_ae,
+            'background_error_ae': ys_background_error_ae,
             'double_detections_error': ys_double_detections_error,
             'crowded_error': ys_crowded_error,
             'larger_bbs_error': ys_larger_bbs_error,
             'body_parts_error': ys_body_parts_error,
             'background_error': ys_background_error,
-            'others_error': ys_others_error,
         }
         toc = time.time()
         # print('DONE (t={:0.2f}s).'.format( toc-tic))
@@ -616,65 +639,58 @@ class COCOeval_citypersons:
 
             # dimension of precision: [TxRxKxAxM]
             s = self.eval['TP']
-            double_detections_error_rate = self.eval['double_detections_error_rate']
-            crowded_error_rate = self.eval['crowded_error_rate']
-            larger_bbs_error_rate = self.eval['larger_bbs_error_rate']
-            body_parts_error_rate = self.eval['body_parts_error_rate']
-            background_error_rate = self.eval['background_error_rate']
-            others_error_rate = self.eval['others_error_rate']
+            double_detections_error_ae = self.eval['double_detections_error_ae']
+            crowded_error_ae = self.eval['crowded_error_ae']
+            larger_bbs_error_ae = self.eval['larger_bbs_error_ae']
+            body_parts_error_ae = self.eval['body_parts_error_ae']
+            background_error_ae = self.eval['background_error_ae']
 
             double_detections_error = self.eval['double_detections_error']
             crowded_error = self.eval['crowded_error']
             larger_bbs_error = self.eval['larger_bbs_error']
             body_parts_error = self.eval['body_parts_error']
             background_error = self.eval['background_error']
-            others_error = self.eval['others_error']
 
             # IoU
             if iouThr is not None:
                 t = np.where(iouThr == p.iouThrs)[0]
                 s = s[t]
-                double_detections_error_rate = double_detections_error_rate[t]
-                crowded_error_rate = crowded_error_rate[t]
-                larger_bbs_error_rate = larger_bbs_error_rate[t]
-                body_parts_error_rate = body_parts_error_rate[t]
-                background_error_rate = background_error_rate[t]
-                others_error_rate = others_error_rate[t]
+                double_detections_error_rate = double_detections_error_ae[t]
+                crowded_error_rate = crowded_error_ae[t]
+                larger_bbs_error_rate = larger_bbs_error_ae[t]
+                body_parts_error_rate = body_parts_error_ae[t]
+                background_error_rate = background_error_ae[t]
 
                 double_detections_error = double_detections_error[t]
                 crowded_error = crowded_error[t]
                 larger_bbs_error = larger_bbs_error[t]
                 body_parts_error = body_parts_error[t]
                 background_error = background_error[t]
-                others_error = others_error[t]
+
             mrs = 1-s[:,:,:,mind]
             double_detections_error_rate = double_detections_error_rate[:,:,:,mind]
             crowded_error_rate = crowded_error_rate[:, :, :, mind]
             larger_bbs_error_rate = larger_bbs_error_rate[:, :, :, mind]
             body_parts_error_rate = body_parts_error_rate[:, :, :, mind]
             background_error_rate = background_error_rate[:, :, :, mind]
-            others_error_rate = others_error_rate[:, :, :, mind]
 
             double_detections_error = double_detections_error[:,:,:,mind]
             crowded_error = crowded_error[:, :, :, mind]
             larger_bbs_error = larger_bbs_error[:, :, :, mind]
             body_parts_error = body_parts_error[:, :, :, mind]
             background_error = background_error[:, :, :, mind]
-            others_error = others_error[:, :, :, mind]
 
             double_detections_error_rate = double_detections_error_rate[double_detections_error_rate > -1]
             crowded_error_rate = crowded_error_rate[crowded_error_rate > -1]
             larger_bbs_error_rate = larger_bbs_error_rate[larger_bbs_error_rate > -1]
             body_parts_error_rate = body_parts_error_rate[body_parts_error_rate > -1]
             background_error_rate = background_error_rate[background_error_rate > -1]
-            others_error_rate = others_error_rate[others_error_rate > -1]
 
             double_detections_error = double_detections_error[double_detections_error > -1]
             crowded_error = crowded_error[crowded_error > -1]
             larger_bbs_error = larger_bbs_error[larger_bbs_error > -1]
             body_parts_error = body_parts_error[body_parts_error > -1]
             background_error = background_error[background_error > -1]
-            others_error = others_error[others_error > -1]
 
             if len(mrs[mrs<2])==0:
                 mean_s = -1
@@ -684,8 +700,8 @@ class COCOeval_citypersons:
                 mean_s = np.exp(mean_s)
             # index = 4  # fppi=0.1
             # index = 8  # fppi=1
-            # index = 8  # recall=0.9
-            index = 9  # recall=1.0
+            index = 8  # recall=0.9
+            # index = 9  # recall=1.0
             out = [iStr.format(titleStr, typeStr,setupStr, iouStr, heightStr, occlStr, mean_s*100),
                    iStr_error.format("ERROR double_detections", "mean", setupStr, iouStr, heightStr, occlStr,
                                      np.mean(double_detections_error_rate) * 100, int(double_detections_error[index])),
