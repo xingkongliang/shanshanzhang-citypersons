@@ -4,11 +4,25 @@ from coco_citypersons import COCO_citypersons
 from eval_MR_multisetup import COCOeval_citypersons
 import os
 
+classes = [
+    'Average Miss Rate  (MR) @ Reasonable         [ IoU=0.50',
+    'Average Miss Rate  (MR) @ Reasonable_small',
+    'Average Miss Rate  (MR) @ Reasonable_occ=heavy',
+    'Average Miss Rate  (MR) @ All                [ IoU=0.50',
+    'Average Miss Rate  (MR) @ All-50',
+    'Average Miss Rate  (MR) @ R_occ=None',
+    'Average Miss Rate  (MR) @ R_occ=Partial',
+    'Average Miss Rate  (MR) @ R_occ=heaavy ',
+    'Average Miss Rate  (MR) @ Heavy',
+    'Average Miss Rate  (MR) @ Partial',
+    'Average Miss Rate  (MR) @ Bare',
+]
 
 annType = 'bbox'      #specify type here
 # print('Running demo for *%s* results.'%(annType))
-iterations = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
-version = 'v3_01'
+# iterations = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
+iterations = [30000]
+version = 'v16_01'
 
 # iteration = 30000
 for iteration in iterations:
@@ -33,12 +47,14 @@ for iteration in iterations:
         cocoEval.evaluate(id_setup)
         cocoEval.accumulate()
         out = cocoEval.summarize(id_setup, res_file)
-        res.append(out)
-    for r in res:
-            print(r.split(' ')[-1][:-1])
-            res_file.write(r.split(' ')[-1][:-1])
-            res_file.write('\n')
+        res.extend(out)
+    for cls in classes:
+        for r in res:
+            if cls in r:
+                print(r.split(' ')[-1][:-1])
+                res_file.write(r.split(' ')[-1][:-1])
+                res_file.write('\n')
     res_file.close()
-    print(30*'-')
+    print(60*'*')
 
 
