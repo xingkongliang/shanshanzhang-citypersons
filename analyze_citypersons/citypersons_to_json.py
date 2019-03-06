@@ -88,9 +88,9 @@ def check_anno(anno, im_file):
     plt.close()
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.imshow(im, aspect='equal')
-    for j in range(len(roi['boxes'])):
-        posv = roi['posv'][j]
-        bbox = roi['boxes'][j]
+    for j in range(len(roi['bb_pos'])):
+        posv = roi['bb_posv'][j]  # x, y, w, h
+        bbox = roi['bb_pos'][j]
         class_name = roi['gt_lbl'][j]
         if roi['gt_ignores'][j]:
             edgecolor = 'red'
@@ -98,14 +98,14 @@ def check_anno(anno, im_file):
             edgecolor = 'blue'
         ax.add_patch(
             plt.Rectangle((bbox[0], bbox[1]),
-                          bbox[2] - bbox[0],
-                          bbox[3] - bbox[1], fill=False,
+                          bbox[2],
+                          bbox[3], fill=False,
                           edgecolor=edgecolor, linewidth=1.5)
             )
         ax.add_patch(
             plt.Rectangle((posv[0], posv[1]),
-                          bbox[2] - posv[0],
-                          posv[3] - posv[1], fill=False,
+                          bbox[2],
+                          posv[3], fill=False,
                           edgecolor='green', linewidth=1)
             )
         ax.text(bbox[0], bbox[1] - 2,
@@ -154,7 +154,7 @@ class dataset_to_coco():
         # self._hRng = None              # acceptable obj heights
         # self._vRng = [0.2, 1]              # acceptable obj occlusion levels
         # For CityPersons
-        self._hRng = [20, np.inf]              # acceptable obj heights
+        self._hRng = [10, np.inf]              # acceptable obj heights
         self._vRng = [0.20, 1.0]               # acceptable obj visible levels
 
         self._data_path = os.path.join(self._devkit_path)
@@ -260,8 +260,8 @@ class dataset_to_coco():
             assert xv2 >= xv1
             assert yv2 >= yv1
 
-            obj_dict['bb_pos'] = [x1, y1, x2, y2]
-            obj_dict['bb_posv'] = [xv1, yv1, xv2, yv2]
+            obj_dict['bb_pos'] = [x1, y1, x2-x1, y2-y1]
+            obj_dict['bb_posv'] = [xv1, yv1, xv2-xv1, yv2-yv1]
             objs_list.append(obj_dict)
 
         del objs
@@ -346,7 +346,7 @@ class dataset_to_coco():
             image_name = '{}.png'.format(idx)
             image_file = self.image_path_from_index(idx)
 
-            if (count % 10 == 0) and vis and anno['boxes'].shape[0] != 0:
+            if (count % 10 == 0) and vis and anno['bb_pos'].shape[0] != 0:
                 check_anno(anno, image_file)
 
             count += 1
@@ -508,30 +508,30 @@ if __name__ == '__main__':
     annotations_dir = os.path.join(citypersons_root, 'shanshanzhang-citypersons/json_annotations')
 
     image_set = 'train'
-    # citypersons = dataset_to_coco(image_set, citypersons_root)
-    # train_json_name = "citypersons_o{}h{}_train.json".format(str(int(citypersons._vRng[0]*100)), str(citypersons._hRng[0]))
-    # citypersons.show_dataset(vis=False)
-    # coco_dict_trainval = citypersons.dataset_to_coco(is_train=True, vis=False)
-    # f = open(os.path.join(annotations_dir, train_json_name), 'w')
-    # print("Output json name: {}".format(train_json_name))
-    # f.write(json.dumps(coco_dict_trainval))
-    # f.close()
-
-    image_set = 'val'
     citypersons = dataset_to_coco(image_set, citypersons_root)
-    val_json_name = "citypersons_o{}h{}_val.json".format(str(int(citypersons._vRng[0] * 100)),
-                                                         str(citypersons._hRng[0]))
+    train_json_name = "citypersons_o{}h{}_train.json".format(str(int(citypersons._vRng[0]*100)), str(citypersons._hRng[0]))
     citypersons.show_dataset(vis=False)
-    coco_dict_val = citypersons.dataset_to_coco(is_train=False, vis=False)
-    f = open(os.path.join(annotations_dir, val_json_name), 'w')
-    f.write(json.dumps(coco_dict_val))
+    coco_dict_trainval = citypersons.dataset_to_coco(is_train=True, vis=False)
+    f = open(os.path.join(annotations_dir, train_json_name), 'w')
+    print("Output json name: {}".format(train_json_name))
+    f.write(json.dumps(coco_dict_trainval))
     f.close()
 
-    image_set = 'test'
-    citypersons = dataset_to_coco(image_set, citypersons_root)
-    coco_dict_test = citypersons.dataset_to_coco_test()
-    f = open(os.path.join(annotations_dir, 'citypersons_test.json'), 'w')
-    f.write(json.dumps(coco_dict_test))
-    f.close()
+    # image_set = 'val'
+    # citypersons = dataset_to_coco(image_set, citypersons_root)
+    # val_json_name = "citypersons_o{}h{}_val.json".format(str(int(citypersons._vRng[0] * 100)),
+    #                                                      str(citypersons._hRng[0]))
+    # citypersons.show_dataset(vis=False)
+    # coco_dict_val = citypersons.dataset_to_coco(is_train=False, vis=False)
+    # f = open(os.path.join(annotations_dir, val_json_name), 'w')
+    # f.write(json.dumps(coco_dict_val))
+    # f.close()
+    #
+    # image_set = 'test'
+    # citypersons = dataset_to_coco(image_set, citypersons_root)
+    # coco_dict_test = citypersons.dataset_to_coco_test()
+    # f = open(os.path.join(annotations_dir, 'citypersons_test.json'), 'w')
+    # f.write(json.dumps(coco_dict_test))
+    # f.close()
 
     print('Done.')
