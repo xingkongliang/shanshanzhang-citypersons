@@ -427,7 +427,7 @@ class dataset_to_coco():
             image_name_with_city = os.path.join(cityname, image_name)
 
             # images
-            image_dict = {u'file_name': image_name_with_city.decode('utf-8'),
+            image_dict = {u'file_name': image_name_with_city,
                           u'height': self._image_height,
                           u'id': image_id,
                           u'width': self._image_width}
@@ -508,28 +508,30 @@ if __name__ == '__main__':
     annotations_dir = os.path.join(citypersons_root, 'shanshanzhang-citypersons/json_annotations')
 
     image_set = 'train'
+    # citypersons = dataset_to_coco(image_set, citypersons_root)
+    # train_json_name = "citypersons_o{}h{}_train.json".format(str(int(citypersons._vRng[0]*100)), str(citypersons._hRng[0]))
+    # citypersons.show_dataset(vis=False)
+    # coco_dict_trainval = citypersons.dataset_to_coco(is_train=True, vis=False)
+    # f = open(os.path.join(annotations_dir, train_json_name), 'w')
+    # print("Output json name: {}".format(train_json_name))
+    # f.write(json.dumps(coco_dict_trainval))
+    # f.close()
+
+    image_set = 'val'
     citypersons = dataset_to_coco(image_set, citypersons_root)
-    train_json_name = "citypersons_o{}h{}_train.json".format(str(int(citypersons._vRng[0]*100)), str(citypersons._hRng[0]))
+    val_json_name = "citypersons_o{}h{}_val.json".format(str(int(citypersons._vRng[0] * 100)),
+                                                         str(citypersons._hRng[0]))
     citypersons.show_dataset(vis=False)
-    coco_dict_trainval = citypersons.dataset_to_coco(is_train=True, vis=False)
-    f = open(os.path.join(annotations_dir, train_json_name), 'w')
-    print("Output json name: {}".format(train_json_name))
-    f.write(json.dumps(coco_dict_trainval))
+    coco_dict_val = citypersons.dataset_to_coco(is_train=False, vis=False)
+    f = open(os.path.join(annotations_dir, val_json_name), 'w')
+    f.write(json.dumps(coco_dict_val))
     f.close()
 
-    # image_set = 'val'
-    # citypersons = dataset_to_coco(image_set, citypersons_root)
-    # citypersons.show_dataset(vis=False)
-    # coco_dict_val = citypersons.dataset_to_coco(is_train=False, vis=False)
-    # f = open(os.path.join(annotations_dir, 'citypersons_val.json'), 'w')
-    # f.write(json.dumps(coco_dict_val))
-    # f.close()
-    #
-    # image_set = 'test'
-    # citypersons = dataset_to_coco(image_set, citypersons_root)
-    # coco_dict_test = citypersons.dataset_to_coco_test()
-    # f = open(os.path.join(annotations_dir, 'citypersons_test.json'), 'w')
-    # f.write(json.dumps(coco_dict_test))
-    # f.close()
+    image_set = 'test'
+    citypersons = dataset_to_coco(image_set, citypersons_root)
+    coco_dict_test = citypersons.dataset_to_coco_test()
+    f = open(os.path.join(annotations_dir, 'citypersons_test.json'), 'w')
+    f.write(json.dumps(coco_dict_test))
+    f.close()
 
     print('Done.')
