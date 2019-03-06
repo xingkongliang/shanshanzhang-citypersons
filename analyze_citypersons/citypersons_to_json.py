@@ -154,8 +154,8 @@ class dataset_to_coco():
         # self._hRng = None              # acceptable obj heights
         # self._vRng = [0.2, 1]              # acceptable obj occlusion levels
         # For CityPersons
-        self._hRng = [40, np.inf]              # acceptable obj heights
-        self._vRng = [0.20, 1.0]              # acceptable obj occlusion levels
+        self._hRng = [20, np.inf]              # acceptable obj heights
+        self._vRng = [0.20, 1.0]               # acceptable obj visible levels
 
         self._data_path = os.path.join(self._devkit_path)
 
@@ -166,9 +166,6 @@ class dataset_to_coco():
         self._anno_file = os.path.join(self._devkit_path, self._anno_dir, 'anno_{}.mat'.format(self._image_set))
         if self._image_set != 'test':
             self._images_files, self._image_index, self._annotations = self._load_image_set_index()
-
-        # print("Height: {}".format(self._hRng[0]))
-        # print("Occlusion level: {}-{}".format(self._vRng[0], self._vRng[1]))
 
         assert os.path.exists(self._devkit_path), \
                 'Devkit path does not exist: {}'.format(self._devkit_path)
@@ -251,14 +248,6 @@ class dataset_to_coco():
             x2 = float(obj_dict['bb_pos'][0] + obj_dict['bb_pos'][2])
             y2 = float(obj_dict['bb_pos'][1] + obj_dict['bb_pos'][3])
             x1, y1, x2, y2 = utils.boxes.clip_xyxy_to_image(x1, y1, x2, y2, self._image_height, self._image_width)
-            if x2 <= x1:
-                print('x2 < x1', x1, y1, x2, y2)
-                x2 = x1 + 1
-                obj_dict['ign'] = 1
-            if y2 <= y1:
-                print('y2 < y1', x1, y1, x2, y2)
-                y2 = y1 + 1
-                obj_dict['ign'] = 1
             assert x2 >= x1
             assert y2 >= y1
 
@@ -268,17 +257,11 @@ class dataset_to_coco():
             xv2 = float(obj_dict['bb_posv'][0] + obj_dict['bb_posv'][2])
             yv2 = float(obj_dict['bb_posv'][1] + obj_dict['bb_posv'][3])
             xv1, yv1, xv2, yv2 = utils.boxes.clip_xyxy_to_image(xv1, yv1, xv2, yv2, self._image_height, self._image_width)
-            if xv2 < xv1:
-                print('xv2 < xv1', xv1, yv1, xv2, yv2)
-                xv2 = xv1 + 1
-            if yv2 < yv1:
-                print('yv2 < yv1', xv1, yv1, xv2, yv2)
-                yv2 = yv1 + 1
             assert xv2 >= xv1
             assert yv2 >= yv1
 
-            obj_dict['boxes'] = [x1, y1, x2, y2]
-            obj_dict['posv'] = [xv1, yv1, xv2, yv2]
+            obj_dict['bb_pos'] = [x1, y1, x2, y2]
+            obj_dict['bb_posv'] = [xv1, yv1, xv2, yv2]
             objs_list.append(obj_dict)
 
         del objs
@@ -322,8 +305,6 @@ class dataset_to_coco():
         num_objs = len(objs)
         bb_pos = np.zeros((num_objs, 4), dtype=np.uint16)
         bb_posv = np.zeros((num_objs, 4), dtype=np.uint16)
-        posv = np.zeros((num_objs, 4), dtype=np.uint16)
-        boxes = np.zeros((num_objs, 4), dtype=np.uint16)
         gt_classes = np.zeros((num_objs), dtype=np.int32)
         gt_ignores = np.zeros((num_objs), dtype=np.uint16)
         gt_lbl = []
@@ -336,8 +317,6 @@ class dataset_to_coco():
             cls = self._class_to_ind['pedestrian']
             bb_pos[ix, :] = obj['bb_pos']
             bb_posv[ix, :] = obj['bb_posv']
-            boxes[ix, :] = obj['boxes']
-            posv[ix, :] = obj['posv']
             gt_classes[ix] = cls
             seg_areas[ix] = obj['bb_pos'][2] * obj['bb_pos'][3]
             gt_ignores[ix] = obj['ign']
@@ -345,8 +324,6 @@ class dataset_to_coco():
 
         return {'bb_pos': bb_pos,
                 'bb_posv': bb_posv,
-                'boxes': boxes,
-                'posv': posv,
                 'gt_classes': gt_classes,
                 'seg_areas': seg_areas,
                 'gt_ignores': gt_ignores,
@@ -361,7 +338,7 @@ class dataset_to_coco():
         print('Num of Caltech Images: ', len(self.image_index))
 
         for image_id, idx in enumerate(self.image_index):
-            print("---{}---{}---{}".format(image_id, len(self._annotations), idx))
+            # print("---{}---{}---{}".format(image_id, len(self._annotations), idx))
             anno = self._load_citypersons_annotation(self._annotations[image_id])
             # if is_train and (anno['boxes'].shape[0] == 0 or len(anno['gt_ignores'])-sum(anno['gt_ignores']) == 0):
             #     continue
@@ -382,7 +359,7 @@ class dataset_to_coco():
             coco_dict[u'images'].append(image_dict)
 
             # annotations
-            for j in range(len(anno['boxes'])):
+            for j in range(len(anno['bb_pos'])):
                 # if anno['gt_ignores'][j] == 1:
                 #     continue
 
@@ -420,7 +397,9 @@ class dataset_to_coco():
         coco_dict[u'categories'] = coco_categories
         coco_dict[u'type'] = coco_type
 
-        print('{} pedestrians.'.format(anno_id-1))
+        print("Height                   : {}".format(self._hRng[0]))
+        print("Visible body level       : {}-{}".format(self._vRng[0], self._vRng[1]))
+        print("The number of pedestrians: {}".format(anno_id-1))
         return coco_dict
 
     def dataset_to_coco_test(self):
@@ -530,9 +509,11 @@ if __name__ == '__main__':
 
     image_set = 'train'
     citypersons = dataset_to_coco(image_set, citypersons_root)
+    train_json_name = "citypersons_o{}h{}_train.json".format(str(int(citypersons._vRng[0]*100)), str(citypersons._hRng[0]))
     citypersons.show_dataset(vis=False)
     coco_dict_trainval = citypersons.dataset_to_coco(is_train=True, vis=False)
-    f = open(os.path.join(annotations_dir, 'citypersons_o30h40_train_without_sitting.json'), 'w')
+    f = open(os.path.join(annotations_dir, train_json_name), 'w')
+    print("Output json name: {}".format(train_json_name))
     f.write(json.dumps(coco_dict_trainval))
     f.close()
 

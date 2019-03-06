@@ -392,7 +392,7 @@ class COCOeval_citypersons:
                 ae[l] = 0
                 for t in np.arange(0.0, 1.1, 0.1):
                     if np.sum(rec[l] >= t) == 0:
-                        p = 0
+                        p = 1
                     else:
                         p = np.max(np.nan_to_num(prec[l])[rec[l] >= t])
                     ae[l] += p / 11
@@ -571,9 +571,13 @@ class COCOeval_citypersons:
                             recall[i - 1] = recall[i]
                     inds = np.searchsorted(fppi, p.fppiThrs, side='right') - 1
                     inds_recall = np.searchsorted(recall, [0.1*i for i in range(1, 11)], side='right') - 1
-                    # plt.plot(np.arange(len(background_error_rate)), background_error_rate)
+                    # plt.plot(np.arange(len(double_detections_error_rate)), double_detections_error_rate, 'b-')
+                    # plt.plot(np.arange(len(crowded_error_rate)), crowded_error_rate, 'r-')
+                    # plt.plot(np.arange(len(larger_bbs_error_rate)), larger_bbs_error_rate, 'g-')
+                    # plt.plot(np.arange(len(body_parts_error_rate)), body_parts_error_rate, 'y-')
+                    # plt.plot(np.arange(len(background_error_rate)), background_error_rate, 'r--')
                     # plt.plot(inds_recall, np.zeros((len(inds_recall))), 'b*')
-                    # plt.title("{}: background_error_rate".format(p.SetupLbl[id_setup]))
+                    # plt.title("{}: error_rate".format(p.SetupLbl[id_setup]))
                     # plt.show()
                     try:
                         for ri, pi in enumerate(inds):

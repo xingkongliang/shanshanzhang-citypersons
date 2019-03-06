@@ -29,16 +29,21 @@ _YELLOW = (255, 255, 0)
 _RED = (255, 0, 0)
 _ORANGE = (255, 165, 0)
 
+# --------------------------------------------------------------------
 annType = 'bbox'      #specify type here
 print('Running demo for *%s* results.'%(annType))
 plot_ignore = True
-version = 'v18_01'
+version = 'v28_01'
+iteration = '4000'
 root = '/media/tianliang/Projects/Caffe2_Projects/detectron-data/citypersons/leftImg8bit'
 dataset = 'val'
+val_dataset = 'citypersons_o20h20_val'
+# --------------------------------------------------------------------
 project_dir = os.path.dirname(os.path.dirname(__file__))
 print("project dir: ", project_dir)
-
-dt_file = os.path.join(project_dir, "res/val/e2e_faster_rcnn_R_50_C4_1x_1_gpu_citypersons_{}/citypersons_o20h20_val/30000/bbox.json".format(version))
+cfg_file = "e2e_faster_rcnn_R_50_C4_1x_1_gpu_citypersons_{}".format(version)
+dt_file = os.path.join(project_dir, "res/val/{}/citypersons_o20h20_val/40000/bbox.json".format(cfg_file, version))
+root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark_visible_rate/Output/inference'
 gt_file = os.path.join(project_dir, 'evaluation/val_gt.json')
 output_dir = os.path.join(project_dir, 'img_output', version)
 if not os.path.exists(output_dir):
