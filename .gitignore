@@ -23,6 +23,7 @@ res/*
 evaluation/res/*
 model/*
 img_output/*
+max_score_error/*
 
 *.pdf
 *.png

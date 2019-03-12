@@ -345,6 +345,7 @@ class COCOeval_citypersons:
                 'hRng':         hRng,
                 'vRng':         vRng,
                 'maxDet':       maxDet,
+                'image_ids':    [imgId for d in dt],
                 'dtIds':        [d['id'] for d in dt],
                 'gtIds':        [g['id'] for g in gt],
                 'dtMatches':    dtm,
@@ -477,6 +478,8 @@ class COCOeval_citypersons:
                 inds = np.argsort(-dtScores, kind='mergesort')
 
                 dtm = np.concatenate([e['dtMatches'][:, 0:maxDet] for e in E], axis=1)[:, inds]
+                dtIds = np.concatenate([np.array(e['dtIds']) for e in E], axis=0)[inds]
+                image_ids = np.concatenate([np.array(e['image_ids']) for e in E], axis=0)[inds]
                 dtIg = np.concatenate([e['dtIgnore'][:, 0:maxDet] for e in E], axis=1)[:, inds]
                 dt_error_type = np.concatenate([e['dt_error_type'][:, 0:maxDet] for e in E], axis=1)[:, inds]
                 error_type = {"double detections": 0, "crowded": 1, "larger bbs": 2, "body parts": 3, "background": 4,
@@ -509,6 +512,9 @@ class COCOeval_citypersons:
                 body_parts_error = body_parts_error[:, inds]
                 background_error = background_error[:, inds]
                 others_error = others_error[:, inds]
+                dt_error_type = dt_error_type[:, inds]
+                dtIds = dtIds[inds]
+                image_ids = image_ids[inds]
 
                 tp_sum = np.cumsum(tps, axis=1).astype(dtype=np.float)
                 double_detections_error_sum = np.cumsum(double_detections_error, axis=1).astype(dtype=np.float)
@@ -630,7 +636,7 @@ class COCOeval_citypersons:
         def _summarize(iouThr=None, maxDets=100 ):
             p = self.params
             iStr = " {:<18} {} @ {:<18} [ IoU={:<9} | height={:>6s} | visibility={:>6s} ] = {:0.2f}%"
-            iStr_error = " {:<18} {} @ {:<18} [ IoU={:<9} | height={:>6s} | visibility={:>6s} ] = {:0.2f}% {:5d}"
+            iStr_error = " {:<18} {} @ {:<18} [ IoU={:<9} | height={:>6s} | visibility={:>6s} ] = {:0.2f}% {}"
             titleStr = 'Average Miss Rate'
             typeStr = '(MR)'
             setupStr = p.SetupLbl[id_setup]
@@ -690,11 +696,11 @@ class COCOeval_citypersons:
             body_parts_error_rate = body_parts_error_rate[body_parts_error_rate > -1]
             background_error_rate = background_error_rate[background_error_rate > -1]
 
-            double_detections_error = double_detections_error[double_detections_error > -1]
-            crowded_error = crowded_error[crowded_error > -1]
-            larger_bbs_error = larger_bbs_error[larger_bbs_error > -1]
-            body_parts_error = body_parts_error[body_parts_error > -1]
-            background_error = background_error[background_error > -1]
+            double_detections_error = double_detections_error[double_detections_error > -1].astype(np.int)
+            crowded_error = crowded_error[crowded_error > -1].astype(np.int)
+            larger_bbs_error = larger_bbs_error[larger_bbs_error > -1].astype(np.int)
+            body_parts_error = body_parts_error[body_parts_error > -1].astype(np.int)
+            background_error = background_error[background_error > -1].astype(np.int)
 
             if len(mrs[mrs<2])==0:
                 mean_s = -1
@@ -708,15 +714,15 @@ class COCOeval_citypersons:
             # index = 9  # recall=1.0
             out = [iStr.format(titleStr, typeStr,setupStr, iouStr, heightStr, occlStr, mean_s*100),
                    iStr_error.format("ERROR double_detections", "mean", setupStr, iouStr, heightStr, occlStr,
-                                     np.mean(double_detections_error_rate) * 100, int(double_detections_error[index])),
+                                     np.mean(double_detections_error_rate) * 100, double_detections_error),
                    iStr_error.format("ERROR crowded", "mean", setupStr, iouStr, heightStr, occlStr,
-                                     np.mean(crowded_error_rate) * 100, int(crowded_error[index])),
+                                     np.mean(crowded_error_rate) * 100, crowded_error),
                    iStr_error.format("ERROR larger_bbs", "mean", setupStr, iouStr, heightStr, occlStr,
-                                     np.mean(larger_bbs_error_rate) * 100, int(larger_bbs_error[index])),
+                                     np.mean(larger_bbs_error_rate) * 100, larger_bbs_error),
                    iStr_error.format("ERROR body_parts", "mean", setupStr, iouStr, heightStr, occlStr,
-                                     np.mean(body_parts_error_rate) * 100, int(body_parts_error[index])),
+                                     np.mean(body_parts_error_rate) * 100, body_parts_error),
                    iStr_error.format("ERROR background", "mean", setupStr, iouStr, heightStr, occlStr,
-                                     np.mean(background_error_rate) * 100, int(background_error[index])),
+                                     np.mean(background_error_rate) * 100, background_error),
                    80 * '-']
             for out_i in out:
                 print(out_i)

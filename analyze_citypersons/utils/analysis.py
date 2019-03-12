@@ -105,3 +105,8 @@ def error_type_analysis(dt, dt_scores, dtIg, dtm, gt, gtIg, gtm, ignore, ious, c
             else:
                 raise NotImplementedError("Unsupported {} method.".format(method))
     return dt_error_type, error_type_count, num_to_error_type, error_type_color_map
+
+
+def vis_max_score_error():
+
+    return True

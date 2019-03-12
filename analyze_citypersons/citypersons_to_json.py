@@ -76,6 +76,30 @@ origin_categories_color_dict = {0: _BLUE,
                                 4: _LIGHTGREEN,
                                 5: _BLACK}
 
+noise_image_names = ["bremen_000053_000019_leftImg8bit.png",
+                     "cologne_000015_000019_leftImg8bit.png",
+                     "cologne_000019_000019_leftImg8bit.png",
+                     "cologne_000130_000019_leftImg8bit.png",
+                     "cologne_000132_000019_leftImg8bit.png",
+                     "dusseldorf_000199_000019_leftImg8bit.png",
+                     "dusseldorf_000210_000019_leftImg8bit.png",
+                     "erfurt_000048_000019_leftImg8bit.png",
+                     "erfurt_000068_000019_leftImg8bit.png",
+                     "hamburg_000000_070334_leftImg8bit.png",
+                     "hamburg_000000_086636_leftImg8bit.png",
+                     "hamburg_000000_091155_leftImg8bit.png",
+                     "hamburg_000000_101724_leftImg8bit.png",
+                     "hamburg_000000_105123_leftImg8bit.png",
+                     "jena_000045_000019_leftImg8bit.png",
+                     "jena_000055_000019_leftImg8bit.png",
+                     "jena_000060_000019_leftImg8bit.png",
+                     "jena_000076_000019_leftImg8bit.png",
+                     "jena_000077_000019_leftImg8bit.png",
+                     "jena_000078_000019_leftImg8bit.png",
+                     "krefeld_000000_026580_leftImg8bit.png",
+                     "strasbourg_000000_017044_leftImg8bit.png",
+                     "strasbourg_000000_017081_leftImg8bit.png",
+                     "zurich_000001_000019_leftImg8bit.png"]
 
 def check_anno(anno, im_file):
     """Draw detected bounding boxes."""
@@ -154,8 +178,8 @@ class dataset_to_coco():
         # self._hRng = None              # acceptable obj heights
         # self._vRng = [0.2, 1]              # acceptable obj occlusion levels
         # For CityPersons
-        self._hRng = [10, np.inf]              # acceptable obj heights
-        self._vRng = [0.20, 1.0]               # acceptable obj visible levels
+        self._hRng = [40, np.inf]              # acceptable obj heights
+        self._vRng = [0.30, 1.0]               # acceptable obj visible levels
 
         self._data_path = os.path.join(self._devkit_path)
 
@@ -286,6 +310,7 @@ class dataset_to_coco():
                 bb = objs[i]['bb_pos']
                 bbv = objs[i]['bb_posv']
                 v = float((bbv[2] * bbv[3])) / (bb[2] * bb[3])
+                assert v <= 1.0
                 objs[i]['ign'] = objs[i]['ign'] or v < self._vRng[0] or v > self._vRng[1]
         if self._squarify is not None:
             for i in range(len(objs)):
@@ -350,7 +375,9 @@ class dataset_to_coco():
                 check_anno(anno, image_file)
 
             count += 1
-
+            if os.path.basename(image_name) in noise_image_names:
+                print("skip id: {}, image name: {}".format(image_id, image_name))
+                continue
             # images
             image_dict = {u'file_name': image_name,  # image_name.decode('utf-8'),
                           u'height': self._image_height,

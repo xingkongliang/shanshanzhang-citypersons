@@ -29,6 +29,7 @@ for iteration in iterations:
     print(version, iteration)
     val_dataset = 'citypersons_o20h20_val'
     root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark_visible_rate/Output/inference'
+    # root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark/Output/inference'
     cfg_file = "e2e_faster_rcnn_R_50_C4_1x_1_gpu_citypersons_{}".format(version)
 
     res_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox.json')
