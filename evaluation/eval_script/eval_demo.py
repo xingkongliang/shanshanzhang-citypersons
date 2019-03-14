@@ -22,7 +22,7 @@ annType = 'bbox'      #specify type here
 # print('Running demo for *%s* results.'%(annType))
 # iterations = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
 iterations = [40000]
-version = 'v28_01'
+version = 'v23_01'
 
 # iteration = 30000
 for iteration in iterations:

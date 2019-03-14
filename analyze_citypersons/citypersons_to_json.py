@@ -178,8 +178,8 @@ class dataset_to_coco():
         # self._hRng = None              # acceptable obj heights
         # self._vRng = [0.2, 1]              # acceptable obj occlusion levels
         # For CityPersons
-        self._hRng = [10, np.inf]              # acceptable obj heights
-        self._vRng = [0.40, 1.0]               # acceptable obj visible levels
+        self._hRng = [40, np.inf]              # acceptable obj heights
+        self._vRng = [0.30, 1.0]               # acceptable obj visible levels
 
         self._data_path = os.path.join(self._devkit_path)
 
@@ -361,7 +361,8 @@ class dataset_to_coco():
         anno_id = 1
         count = 0
         print('Num of Caltech Images: ', len(self.image_index))
-
+        # f_train = open("{}.txt".format(self._image_set), "w")
+        # image_dir = "/media/tianliang/DATA/DataSets/Cityscapes/leftImg8bit/{}/".format(self._image_set)
         for image_id, idx in enumerate(self.image_index):
             # print("---{}---{}---{}".format(image_id, len(self._annotations), idx))
             anno = self._load_citypersons_annotation(self._annotations[image_id])
@@ -392,6 +393,13 @@ class dataset_to_coco():
 
                 x1, y1, w, h = anno['bb_pos'][j]
                 bb_pos = [int(x1), int(y1), int(w), int(h)]  # [x,y,width,height]
+                # if anno['gt_ignores'].all():
+                #     continue
+                # if int(anno['gt_ignores'][j]):
+                #     class_name = "ignore"
+                # else:
+                #     class_name = "pedestrian"
+                # f_train.write("{} {} {} {} {} {}\n".format(image_file, int(x1), int(y1), int(x1+w-1), int(y1+h-1), class_name))
                 xv1, yv1, wv, hv = anno['bb_posv'][j]
                 bb_posv = [int(xv1), int(yv1), int(wv), int(hv)]  # [x,y,width,height]
                 ingore = int(anno['gt_ignores'][j])
@@ -408,7 +416,7 @@ class dataset_to_coco():
                                    u'id': anno_id}
                 coco_dict[u'annotations'].append(annotation_dict)
                 anno_id += 1
-
+        # f_train.close()
         ###
         coco_info_dict = {u'contributor': u'CityPersons',
                           u'date_created': u'2018-04-06 16:00:00',

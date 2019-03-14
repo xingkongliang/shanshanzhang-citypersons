@@ -3,8 +3,8 @@ import datetime
 import time
 from collections import defaultdict
 # from . import mask as maskUtils
-import copy
 import os
+import copy
 import cv2
 from PIL import Image
 import tlutils.utils.vis as vis
@@ -439,7 +439,7 @@ class COCOeval_citypersons:
 
         return ae
 
-    def accumulate(self, id_setup, p = None):
+    def accumulate(self, id_setup, version, p = None):
         '''
         Accumulate per image evaluation results and store the result in self.eval
         :param p: input params for evaluation
@@ -458,20 +458,24 @@ class COCOeval_citypersons:
         RECALL      = len([0.1*i for i in range(1, 11)])
         K           = len(p.catIds) if p.useCats else 1
         M           = len(p.maxDets)
-        ys   = -np.ones((T,R,K,M)) # -1 for the precision of absent categories
+        ys = -np.ones((T,R,K,M)) # -1 for the precision of absent
+        ys_double_detections_improvement = -np.ones((T, R, K, M))  # -1 for the precision of absent
+        ys_crowded_error_improvement = -np.ones((T, R, K, M))  # -1 for the precision of absent
+        ys_larger_bbs_error_improvement = -np.ones((T, R, K, M))  # -1 for the precision of absent
+        ys_body_parts_error_improvement = -np.ones((T, R, K, M))  # -1 for the precision of absent
+        ys_background_error_improvement = -np.ones((T, R, K, M))  # -1 for the precision of absent
+
         ys_double_detections_error_ae = -np.ones((T,1,K,M))
         ys_crowded_error_ae = -np.ones((T,1,K,M))
         ys_larger_bbs_error_ae = -np.ones((T,1,K,M))
         ys_body_parts_error_ae = -np.ones((T,1,K,M))
         ys_background_error_ae = -np.ones((T,1,K,M))
-        ys_others_error_ae = -np.ones((T,1,K,M))
 
         ys_double_detections_error = -np.ones((T,RECALL,K,M))
         ys_crowded_error = -np.ones((T,RECALL,K,M))
         ys_larger_bbs_error = -np.ones((T,RECALL,K,M))
         ys_body_parts_error = -np.ones((T,RECALL,K,M))
         ys_background_error = -np.ones((T,RECALL,K,M))
-        ys_others_error = -np.ones((T,RECALL,K,M))
 
         # create dictionary for future indexing
         _pe = self._paramsEval
@@ -527,16 +531,41 @@ class COCOeval_citypersons:
                 larger_bbs_error = np.logical_and(larger_bbs_error, np.logical_not(dtIg))
                 body_parts_error = np.logical_and(body_parts_error, np.logical_not(dtIg))
                 background_error = np.logical_and(background_error, np.logical_not(dtIg))
-                others_error = np.logical_and(others_error, np.logical_not(dtIg))
+
+                tps_double_detections_improvement_keep = np.where(double_detections_error)[1]
+                tps_crowded_improvement_keep = np.where(crowded_error)[1]
+                tps_larger_bbs_improvement_keep = np.where(larger_bbs_error)[1]
+                tps_body_parts_improvement_keep = np.where(body_parts_error)[1]
+                tps_background_improvement_keep = np.where(background_error)[1]
                 inds = np.where(dtIg == 0)[1]
-                tps = tps[:, inds]
-                fps = fps[:, inds]
                 double_detections_error = double_detections_error[:, inds]
                 crowded_error = crowded_error[:, inds]
                 larger_bbs_error = larger_bbs_error[:, inds]
                 body_parts_error = body_parts_error[:, inds]
                 background_error = background_error[:, inds]
-                others_error = others_error[:, inds]
+                keep = list(set(inds) - set(tps_double_detections_improvement_keep))
+                keep.sort()
+                tps_double_detections_improvement = tps[:, keep]
+                fps_double_detections_improvement = fps[:, keep]
+                keep = list(set(inds) - set(tps_crowded_improvement_keep))
+                keep.sort()
+                tps_crowded_improvement = tps[:, keep]
+                fps_crowded_improvement = fps[:, keep]
+                keep = list(set(inds) - set(tps_larger_bbs_improvement_keep))
+                keep.sort()
+                tps_larger_bbs_improvement = tps[:, keep]
+                fps_larger_bbs_improvement = fps[:, keep]
+                keep = list(set(inds) - set(tps_body_parts_improvement_keep))
+                keep.sort()
+                tps_body_parts_improvement = tps[:, keep]
+                fps_body_parts_improvement = fps[:, keep]
+                keep = list(set(inds) - set(tps_background_improvement_keep))
+                keep.sort()
+                tps_background_improvement = tps[:, keep]
+                fps_background_improvement = fps[:, keep]
+                tps = tps[:, inds]
+                fps = fps[:, inds]
+
                 dt_error_type = dt_error_type[:, inds]
                 dtIds = dtIds[inds]
                 image_ids = image_ids[inds]
@@ -547,9 +576,23 @@ class COCOeval_citypersons:
                 larger_bbs_error_sum = np.cumsum(larger_bbs_error, axis=1).astype(dtype=np.float)
                 body_parts_error_sum = np.cumsum(body_parts_error, axis=1).astype(dtype=np.float)
                 background_error_sum = np.cumsum(background_error, axis=1).astype(dtype=np.float)
-                others_error_sum = np.cumsum(others_error, axis=1).astype(dtype=np.float)
+
+                tp_double_detections_improvement_sum = np.cumsum(tps_double_detections_improvement, axis=1).astype(dtype=np.float)
+                tp_crowded_improvement_sum = np.cumsum(tps_crowded_improvement, axis=1).astype(dtype=np.float)
+                tp_larger_bbs_improvement_sum = np.cumsum(tps_larger_bbs_improvement, axis=1).astype(dtype=np.float)
+                tp_body_parts_improvement_sum = np.cumsum(tps_body_parts_improvement, axis=1).astype(dtype=np.float)
+                tp_background_improvement_sum = np.cumsum(tps_background_improvement, axis=1).astype(dtype=np.float)
+
                 fp_sum = np.cumsum(fps, axis=1).astype(dtype=np.float)
+                fp_double_detections_improvement_sum = np.cumsum(fps_double_detections_improvement, axis=1).astype(dtype=np.float)
+                fp_crowded_improvement_sum = np.cumsum(fps_crowded_improvement, axis=1).astype(dtype=np.float)
+                fp_larger_bbs_improvement_sum = np.cumsum(fps_larger_bbs_improvement, axis=1).astype(dtype=np.float)
+                fp_body_parts_improvement_sum = np.cumsum(fps_body_parts_improvement, axis=1).astype(dtype=np.float)
+                fp_background_improvement_sum = np.cumsum(fps_background_improvement, axis=1).astype(dtype=np.float)
+
                 for i_index, index in enumerate(np.where(fps == True)[1]):
+                    if i_index > 100:
+                        break
                     this_detection_error_type = dt_error_type[0, index]
                     this_dtId = dtIds[index]
                     this_imId = image_ids[index]
@@ -578,25 +621,27 @@ class COCOeval_citypersons:
                     num_to_error_type = {-1: "", 0: "double detections", 1: "crowded", 2: "larger bbs", 3: "body parts",
                                          4: "background", 5: "others"}
                     bbox = d['bbox']
-                    proposal = d['proposals']
                     score = d['score']
-                    objectness = d['objectness']
                     for gt_bbox in targets_clearn_bbox:
                         im = vis.vis_bbox(im, gt_bbox, color._GREEN, thick=2)
                     for gt_bbox in targets_ignore_bbox:
                         im = vis.vis_bbox(im, gt_bbox, color._YELLOW, thick=2)
-                    im = vis.vis_bbox(im, proposal, color._BLUE, thick=2)
+                    if 'proposals' in d.keys():
+                        proposal = d['proposals']
+                        objectness = d['objectness']
+                        im = vis.vis_bbox(im, proposal, color._BLUE, thick=2)
+                        im = vis.vis_class(im, (bbox[0], bbox[1] - 16),
+                                           str("{:.2f}".format(objectness)),
+                                           color=color._YELLOW, font_scale=0.5)
                     im = vis.vis_bbox(im, bbox, color._RED, thick=2)
-                    im = vis.vis_class(im, (bbox[0], bbox[1] - 16),
-                                   str("{:.2f}".format(objectness)),
-                                   color=color._YELLOW, font_scale=0.5)
                     im = vis.vis_class(im, (bbox[0], bbox[1] - 30),
                                    str("{:.2f}".format(score)),
                                    color=color._LIME, font_scale=0.5)
                     im = vis.vis_class(im, (bbox[0], bbox[1] - 44),
                                        str("{}".format(num_to_error_type[this_detection_error_type])),
                                        color=color._LIME, font_scale=0.5)
-                    output_dir = "/media/tianliang/DATA/DataSets/Cityscapes/shanshanzhang-citypersons/max_score_error"
+                    output_dir = "/media/tianliang/DATA/DataSets/Cityscapes/shanshanzhang-citypersons/" \
+                                 "max_score_error/{}/{}".format(version, self.params.SetupLbl[id_setup])
                     if not os.path.exists(output_dir):
                         os.makedirs(output_dir)
                     output_file = os.path.join(output_dir, "{}_{}.png".format(i_index, img['im_name']))
@@ -604,21 +649,71 @@ class COCOeval_citypersons:
                     im.save(output_file)
                 error_anlysis = {"dt_error_type": dt_error_type[0, np.where(fps==True)[1]], "dtIds": dtIds[np.where(fps==True)[1]]}
 
-                for t, (tp, fp, double_detections_error, crowded_error, larger_bbs_error, body_parts_error,
-                        background_error, others_error) in enumerate(zip(tp_sum, fp_sum, double_detections_error_sum,
-                                                                         crowded_error_sum, larger_bbs_error_sum,
-                                                                         body_parts_error_sum, background_error_sum,
-                                                                         others_error_sum)):
+                for t, (tp,
+                        fp,
+                        fp_double_detections_improvement,
+                        fp_crowded_improvement,
+                        fp_larger_bbs_improvement,
+                        fp_body_parts_improvement,
+                        fp_background_improvement,
+                        double_detections_error,
+                        crowded_error,
+                        larger_bbs_error,
+                        body_parts_error,
+                        background_error,
+                        tp_double_detections_improvement,
+                        tp_crowded_improvement,
+                        tp_larger_bbs_improvement,
+                        tp_body_parts_improvement,
+                        tp_background_improvement) in enumerate(zip(tp_sum,
+                                                                 fp_sum,
+                                                                 fp_double_detections_improvement_sum,
+                                                                 fp_crowded_improvement_sum,
+                                                                 fp_larger_bbs_improvement_sum,
+                                                                 fp_body_parts_improvement_sum,
+                                                                 fp_background_improvement_sum,
+                                                                 double_detections_error_sum,
+                                                                 crowded_error_sum,
+                                                                 larger_bbs_error_sum,
+                                                                 body_parts_error_sum,
+                                                                 background_error_sum,
+                                                                 tp_double_detections_improvement_sum,
+                                                                 tp_crowded_improvement_sum,
+                                                                 tp_larger_bbs_improvement_sum,
+                                                                 tp_body_parts_improvement_sum,
+                                                                 tp_background_improvement_sum)):
                     tp = np.array(tp)
                     fppi = np.array(fp)/I0
+                    fppi_double_detections_improvement = np.array(fp_double_detections_improvement) / I0
+                    fppi_crowded_improvement = np.array(fp_crowded_improvement) / I0
+                    fppi_larger_bbs_improvement = np.array(fp_larger_bbs_improvement) / I0
+                    fppi_body_parts_improvement = np.array(fp_body_parts_improvement) / I0
+                    fppi_background_improvement = np.array(fp_background_improvement) / I0
                     nd = len(tp)
+                    nd_tp_double_detections_improvement = len(tp_double_detections_improvement)
+                    nd_tp_crowded_improvement = len(tp_crowded_improvement)
+                    nd_tp_larger_bbs_improvement = len(tp_larger_bbs_improvement)
+                    nd_tp_body_parts_improvement = len(tp_body_parts_improvement)
+                    nd_tp_background_improvement = len(tp_background_improvement)
+
                     recall = tp / npig
+                    recall_double_detections_improvement = np.array(tp_double_detections_improvement) / npig
+                    recall_crowded_improvement = np.array(tp_crowded_improvement) / npig
+                    recall_larger_bbs_improvement = np.array(tp_larger_bbs_improvement) / npig
+                    recall_body_parts_improvement = np.array(tp_body_parts_improvement) / npig
+                    recall_background_improvement = np.array(tp_background_improvement) / npig
+
+                    # recall_double_detections_improvement[recall_double_detections_improvement>1] = 0.99
+                    # recall_crowded_improvement[recall_crowded_improvement > 1] = 0.99
+                    # recall_larger_bbs_improvement[recall_larger_bbs_improvement > 1] = 0.99
+                    # recall_body_parts_improvement[recall_body_parts_improvement > 1] = 0.99
+                    # recall_background_improvement[recall_background_improvement > 1] = 0.99
+
                     double_detections_error_rate = double_detections_error / (tp+fp)
                     crowded_error_rate = crowded_error / (tp+fp)
                     larger_bbs_error_rate = larger_bbs_error / (tp+fp)
                     body_parts_error_rate = body_parts_error / (tp+fp)
                     background_error_rate = background_error / (tp+fp)
-                    others_error_rate = others_error / (tp+fp)
 
                     double_detections_error_ae = self.calc_detection_voc_ae([double_detections_error_rate], [recall], use_07_metric=True)
                     crowded_error_ae = self.calc_detection_voc_ae([crowded_error_rate], [recall], use_07_metric=True)
@@ -626,13 +721,17 @@ class COCOeval_citypersons:
                     body_parts_error_ae = self.calc_detection_voc_ae([body_parts_error_rate], [recall], use_07_metric=True)
                     background_error_ae = self.calc_detection_voc_ae([background_error_rate], [recall], use_07_metric=True)
 
-                    q = np.zeros((R,))
-                    q_double_detections_error = np.zeros((RECALL,))
-                    q_crowded_error = np.zeros((RECALL,))
-                    q_larger_bbs_error = np.zeros((RECALL,))
-                    q_body_parts_error = np.zeros((RECALL,))
-                    q_background_error = np.zeros((RECALL,))
-                    q_others_error = np.zeros((RECALL,))
+                    q = np.zeros((R,)).tolist()
+                    q_double_detections_error_improvement = np.zeros((R,)).tolist()
+                    q_crowded_error_improvement = np.zeros((R,)).tolist()
+                    q_larger_bbs_error_improvement = np.zeros((R,)).tolist()
+                    q_body_parts_error_improvement = np.zeros((R,)).tolist()
+                    q_background_error_improvement = np.zeros((R,)).tolist()
+                    q_double_detections_error = np.zeros((RECALL,)).tolist()
+                    q_crowded_error = np.zeros((RECALL,)).tolist()
+                    q_larger_bbs_error = np.zeros((RECALL,)).tolist()
+                    q_body_parts_error = np.zeros((RECALL,)).tolist()
+                    q_background_error = np.zeros((RECALL,)).tolist()
 
                     # numpy is slow without cython optimization for accessing elements
                     # use python array gets significant speed improvement
@@ -641,43 +740,80 @@ class COCOeval_citypersons:
                     larger_bbs_error = larger_bbs_error.tolist()
                     body_parts_error = body_parts_error.tolist()
                     background_error = background_error.tolist()
-                    others_error = others_error.tolist()
 
                     recall = recall.tolist()
-                    q = q.tolist()
-                    q_double_detections_error = q_double_detections_error.tolist()
-                    q_crowded_error = q_crowded_error.tolist()
-                    q_larger_bbs_error = q_larger_bbs_error.tolist()
-                    q_body_parts_error = q_body_parts_error.tolist()
-                    q_background_error = q_background_error.tolist()
-                    q_others_error = q_others_error.tolist()
+                    recall_double_detections_improvement = recall_double_detections_improvement.tolist()
+                    recall_crowded_improvement = recall_crowded_improvement.tolist()
+                    recall_larger_bbs_improvement = recall_larger_bbs_improvement.tolist()
+                    recall_body_parts_improvement = recall_body_parts_improvement.tolist()
+                    recall_background_improvement = recall_background_improvement.tolist()
 
                     for i in range(nd - 1, 0, -1):
                         if recall[i] < recall[i - 1]:
                             recall[i - 1] = recall[i]
+                    for i in range(nd_tp_double_detections_improvement - 1, 0, -1):
+                        if recall_double_detections_improvement[i] < recall_double_detections_improvement[i - 1]:
+                            recall_double_detections_improvement[i - 1] = recall_double_detections_improvement[i]
+                    for i in range(nd_tp_crowded_improvement - 1, 0, -1):
+                        if recall_crowded_improvement[i] < recall_crowded_improvement[i - 1]:
+                            recall_crowded_improvement[i - 1] = recall_crowded_improvement[i]
+                    for i in range(nd_tp_larger_bbs_improvement - 1, 0, -1):
+                        if recall_larger_bbs_improvement[i] < recall_larger_bbs_improvement[i - 1]:
+                            recall_larger_bbs_improvement[i - 1] = recall_larger_bbs_improvement[i]
+                    for i in range(nd_tp_body_parts_improvement - 1, 0, -1):
+                        if recall_body_parts_improvement[i] < recall_body_parts_improvement[i - 1]:
+                            recall_body_parts_improvement[i - 1] = recall_body_parts_improvement[i]
+                    for i in range(nd_tp_background_improvement - 1, 0, -1):
+                        if recall_background_improvement[i] < recall_background_improvement[i - 1]:
+                            recall_background_improvement[i - 1] = recall_background_improvement[i]
                     inds = np.searchsorted(fppi, p.fppiThrs, side='right') - 1
+                    inds_double_detections_improvement = np.searchsorted(fppi_double_detections_improvement, p.fppiThrs, side='right') - 1
+                    inds_crowded_improvement = np.searchsorted(fppi_crowded_improvement, p.fppiThrs, side='right') - 1
+                    inds_larger_bbs_improvement = np.searchsorted(fppi_larger_bbs_improvement, p.fppiThrs, side='right') - 1
+                    inds_body_parts_improvement = np.searchsorted(fppi_body_parts_improvement, p.fppiThrs, side='right') - 1
+                    inds_background_improvement = np.searchsorted(fppi_background_improvement, p.fppiThrs, side='right') - 1
                     inds_recall = np.searchsorted(recall, [0.1*i for i in range(1, 11)], side='right') - 1
-                    # plt.plot(np.arange(len(double_detections_error_rate)), double_detections_error_rate, 'b-')
-                    # plt.plot(np.arange(len(crowded_error_rate)), crowded_error_rate, 'r-')
-                    # plt.plot(np.arange(len(larger_bbs_error_rate)), larger_bbs_error_rate, 'g-')
-                    # plt.plot(np.arange(len(body_parts_error_rate)), body_parts_error_rate, 'y-')
-                    # plt.plot(np.arange(len(background_error_rate)), background_error_rate, 'r--')
-                    # plt.plot(inds_recall, np.zeros((len(inds_recall))), 'b*')
-                    # plt.title("{}: error_rate".format(p.SetupLbl[id_setup]))
-                    # plt.show()
+                    vis_error = False
+                    if vis_error:
+                        fig, axes = plt.subplots(1, 1, figsize=(5, 5))
+                        axes.plot(np.arange(len(double_detections_error_rate)), double_detections_error_rate, 'b-', label="double_detections")
+                        axes.plot(np.arange(len(crowded_error_rate)), crowded_error_rate, 'r-', label="crowded")
+                        axes.plot(np.arange(len(larger_bbs_error_rate)), larger_bbs_error_rate, 'g-', label="larger_bbs")
+                        axes.plot(np.arange(len(body_parts_error_rate)), body_parts_error_rate, 'y-', label="body_parts")
+                        axes.plot(np.arange(len(background_error_rate)), background_error_rate, 'r--', label="background")
+                        axes.plot(inds_recall, np.zeros((len(inds_recall))), 'b*')
+                        # axes.set_yscale("log")
+                        plt.legend(fontsize='medium')
+                        plt.title("{}: error_rate".format(p.SetupLbl[id_setup]))
+                        plt.show()
                     try:
                         for ri, pi in enumerate(inds):
                             q[ri] = recall[pi]
+                        for ri, pi in enumerate(inds_double_detections_improvement):
+                            q_double_detections_error_improvement[ri] = recall_double_detections_improvement[pi]
+                        for ri, pi in enumerate(inds_crowded_improvement):
+                            q_crowded_error_improvement[ri] = recall_crowded_improvement[pi]
+                        for ri, pi in enumerate(inds_larger_bbs_improvement):
+                            q_larger_bbs_error_improvement[ri] = recall_larger_bbs_improvement[pi]
+                        for ri, pi in enumerate(inds_body_parts_improvement):
+                            q_body_parts_error_improvement[ri] = recall_body_parts_improvement[pi]
+                        for ri, pi in enumerate(inds_background_improvement):
+                            q_background_error_improvement[ri] = recall_background_improvement[pi]
                         for ri, pi in enumerate(inds_recall):
                             q_double_detections_error[ri] = double_detections_error[pi]
                             q_crowded_error[ri] = crowded_error[pi]
                             q_larger_bbs_error[ri] = larger_bbs_error[pi]
                             q_body_parts_error[ri] = body_parts_error[pi]
                             q_background_error[ri] = background_error[pi]
-                            q_others_error[ri] = others_error[pi]
                     except:
                         pass
                     ys[t,:,k,m] = np.array(q)
+                    ys_double_detections_improvement[t, :, k, m] = np.array(q_double_detections_error_improvement)
+                    ys_crowded_error_improvement[t, :, k, m] = np.array(q_crowded_error_improvement)
+                    ys_larger_bbs_error_improvement[t, :, k, m] = np.array(q_larger_bbs_error_improvement)
+                    ys_body_parts_error_improvement[t, :, k, m] = np.array(q_body_parts_error_improvement)
+                    ys_background_error_improvement[t, :, k, m] = np.array(q_background_error_improvement)
+
                     ys_double_detections_error_ae[t,:,k,m] = np.array(double_detections_error_ae)
                     ys_crowded_error_ae[t,:,k,m] = np.array(crowded_error_ae)
                     ys_larger_bbs_error_ae[t,:,k,m] = np.array(larger_bbs_error_ae)
@@ -694,6 +830,11 @@ class COCOeval_citypersons:
             'counts': [T, R, K, M],
             'date': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'TP':   ys,
+            'double_detections_improvement': ys_double_detections_improvement,
+            'crowded_error_improvement': ys_crowded_error_improvement,
+            'larger_bbs_error_improvement': ys_larger_bbs_error_improvement,
+            'body_parts_error_improvement': ys_body_parts_error_improvement,
+            'background_error_improvement': ys_background_error_improvement,
             'double_detections_error_ae': ys_double_detections_error_ae,
             'crowded_error_ae': ys_crowded_error_ae,
             'larger_bbs_error_ae': ys_larger_bbs_error_ae,
@@ -716,7 +857,8 @@ class COCOeval_citypersons:
         def _summarize(iouThr=None, maxDets=100 ):
             p = self.params
             iStr = " {:<18} {} @ {:<18} [ IoU={:<9} | height={:>6s} | visibility={:>6s} ] = {:0.2f}%"
-            iStr_error = " {:<18} {} @ {:<18} [ IoU={:<9} | height={:>6s} | visibility={:>6s} ] = {:0.2f}% {}"
+            iStr_error = " {:<18} {} @ {:<18}] = {:>5}% | " \
+                         "{:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d}"
             titleStr = 'Average Miss Rate'
             typeStr = '(MR)'
             setupStr = p.SetupLbl[id_setup]
@@ -729,6 +871,12 @@ class COCOeval_citypersons:
 
             # dimension of precision: [TxRxKxAxM]
             s = self.eval['TP']
+            double_detections_improvement = self.eval['double_detections_improvement']
+            crowded_error_improvement = self.eval['crowded_error_improvement']
+            larger_bbs_error_improvement = self.eval['larger_bbs_error_improvement']
+            body_parts_error_improvement = self.eval['body_parts_error_improvement']
+            background_error_improvement = self.eval['background_error_improvement']
+
             double_detections_error_ae = self.eval['double_detections_error_ae']
             crowded_error_ae = self.eval['crowded_error_ae']
             larger_bbs_error_ae = self.eval['larger_bbs_error_ae']
@@ -745,6 +893,13 @@ class COCOeval_citypersons:
             if iouThr is not None:
                 t = np.where(iouThr == p.iouThrs)[0]
                 s = s[t]
+
+                double_detections_improvement = double_detections_improvement[t]
+                crowded_error_improvement = crowded_error_improvement[t]
+                larger_bbs_error_improvement = larger_bbs_error_improvement[t]
+                body_parts_error_improvement = body_parts_error_improvement[t]
+                background_error_improvement = background_error_improvement[t]
+
                 double_detections_error_rate = double_detections_error_ae[t]
                 crowded_error_rate = crowded_error_ae[t]
                 larger_bbs_error_rate = larger_bbs_error_ae[t]
@@ -758,6 +913,12 @@ class COCOeval_citypersons:
                 background_error = background_error[t]
 
             mrs = 1-s[:,:,:,mind]
+            double_detections_improvement = 1-double_detections_improvement[:,:,:,mind]
+            crowded_error_improvement = 1-crowded_error_improvement[:,:,:,mind]
+            larger_bbs_error_improvement = 1-larger_bbs_error_improvement[:,:,:,mind]
+            body_parts_error_improvement = 1-body_parts_error_improvement[:,:,:,mind]
+            background_error_improvement = 1-background_error_improvement[:,:,:,mind]
+
             double_detections_error_rate = double_detections_error_rate[:,:,:,mind]
             crowded_error_rate = crowded_error_rate[:, :, :, mind]
             larger_bbs_error_rate = larger_bbs_error_rate[:, :, :, mind]
@@ -788,22 +949,27 @@ class COCOeval_citypersons:
                 mean_s = np.log(mrs[mrs<2])
                 mean_s = np.mean(mean_s)
                 mean_s = np.exp(mean_s)
-            # index = 4  # fppi=0.1
-            # index = 8  # fppi=1
-            index = 8  # recall=0.9
-            # index = 9  # recall=1.0
-            out = [iStr.format(titleStr, typeStr,setupStr, iouStr, heightStr, occlStr, mean_s*100),
-                   iStr_error.format("ERROR double_detections", "mean", setupStr, iouStr, heightStr, occlStr,
-                                     np.mean(double_detections_error_rate) * 100, double_detections_error),
-                   iStr_error.format("ERROR crowded", "mean", setupStr, iouStr, heightStr, occlStr,
-                                     np.mean(crowded_error_rate) * 100, crowded_error),
-                   iStr_error.format("ERROR larger_bbs", "mean", setupStr, iouStr, heightStr, occlStr,
-                                     np.mean(larger_bbs_error_rate) * 100, larger_bbs_error),
-                   iStr_error.format("ERROR body_parts", "mean", setupStr, iouStr, heightStr, occlStr,
-                                     np.mean(body_parts_error_rate) * 100, body_parts_error),
-                   iStr_error.format("ERROR background", "mean", setupStr, iouStr, heightStr, occlStr,
-                                     np.mean(background_error_rate) * 100, background_error),
-                   80 * '-']
+                mean_double_detections_improvement = np.exp(np.mean(np.log(double_detections_improvement[double_detections_improvement < 2])))
+                mean_crowded_error_improvement = np.exp(np.mean(np.log(crowded_error_improvement[crowded_error_improvement < 2])))
+                mean_larger_bbs_error_improvement = np.exp(np.mean(np.log(larger_bbs_error_improvement[larger_bbs_error_improvement < 2])))
+                mean_body_parts_error_improvement = np.exp(np.mean(np.log(body_parts_error_improvement[body_parts_error_improvement < 2])))
+                mean_background_error_improvement = np.exp(np.mean(np.log(background_error_improvement[background_error_improvement < 2])))
+
+            show_error_detial = True
+
+            out = [iStr.format(titleStr, typeStr,setupStr, iouStr, heightStr, occlStr, mean_s*100)]
+            if show_error_detial:
+                out.extend([iStr_error.format("Improve double", "(MR)", setupStr,
+                                              str("%.2f" % (mean_double_detections_improvement * 100)), *[i for i in double_detections_error]),
+                           iStr_error.format("Improve crowded", "(MR)", setupStr,
+                                             str("%.2f" % (mean_crowded_error_improvement * 100)), *[i for i in crowded_error]),
+                           iStr_error.format("Improve larger_bbs", "(MR)", setupStr,
+                                             str("%.2f" % (mean_larger_bbs_error_improvement * 100)), *[i for i in larger_bbs_error]),
+                           iStr_error.format("Improve body_parts", "(MR)", setupStr,
+                                             str("%.2f" % (mean_body_parts_error_improvement * 100)), *[i for i in body_parts_error]),
+                           iStr_error.format("Improve background", "(MR)", setupStr,
+                                             str("%.2f" % (mean_background_error_improvement * 100)), *[i for i in background_error]),
+                           80 * '-'])
             for out_i in out:
                 print(out_i)
                 res_file.write(out_i)
