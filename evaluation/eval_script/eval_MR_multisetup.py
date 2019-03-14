@@ -507,37 +507,39 @@ class COCOeval_citypersons:
                 body_parts_error = np.logical_and(body_parts_error, np.logical_not(dtIg))
                 background_error = np.logical_and(background_error, np.logical_not(dtIg))
 
-                tps_double_detections_improvement = np.logical_or(tps, double_detections_error)
-                tps_crowded_improvement = np.logical_or(tps, crowded_error)
-                tps_larger_bbs_improvement = np.logical_or(tps, larger_bbs_error)
-                tps_body_parts_improvement = np.logical_or(tps, body_parts_error)
-                tps_background_improvement = np.logical_or(tps, background_error)
-
-                fps_double_detections_improvement = np.logical_and(fps, np.logical_not(double_detections_error))
-                fps_crowded_improvement = np.logical_and(fps, np.logical_not(crowded_error))
-                fps_larger_bbs_improvement = np.logical_and(fps, np.logical_not(larger_bbs_error))
-                fps_body_parts_improvement = np.logical_and(fps, np.logical_not(body_parts_error))
-                fps_background_improvement = np.logical_and(fps, np.logical_not(background_error))
-
+                tps_double_detections_improvement_keep = np.where(double_detections_error)[1]
+                tps_crowded_improvement_keep = np.where(crowded_error)[1]
+                tps_larger_bbs_improvement_keep = np.where(larger_bbs_error)[1]
+                tps_body_parts_improvement_keep = np.where(body_parts_error)[1]
+                tps_background_improvement_keep = np.where(background_error)[1]
                 inds = np.where(dtIg == 0)[1]
-                tps = tps[:, inds]
-                fps = fps[:, inds]
                 double_detections_error = double_detections_error[:, inds]
                 crowded_error = crowded_error[:, inds]
                 larger_bbs_error = larger_bbs_error[:, inds]
                 body_parts_error = body_parts_error[:, inds]
                 background_error = background_error[:, inds]
-                fps_double_detections_improvement = fps_double_detections_improvement[:, inds]
-                fps_crowded_improvement = fps_crowded_improvement[:, inds]
-                fps_larger_bbs_improvement = fps_larger_bbs_improvement[:, inds]
-                fps_body_parts_improvement = fps_body_parts_improvement[:, inds]
-                fps_background_improvement = fps_background_improvement[:, inds]
-
-                tps_double_detections_improvement = tps_double_detections_improvement[:, inds]
-                tps_crowded_improvement = tps_crowded_improvement[:, inds]
-                tps_larger_bbs_improvement = tps_larger_bbs_improvement[:, inds]
-                tps_body_parts_improvement = tps_body_parts_improvement[:, inds]
-                tps_background_improvement = tps_background_improvement[:, inds]
+                keep = list(set(inds) - set(tps_double_detections_improvement_keep))
+                keep.sort()
+                tps_double_detections_improvement = tps[:, keep]
+                fps_double_detections_improvement = fps[:, keep]
+                keep = list(set(inds) - set(tps_crowded_improvement_keep))
+                keep.sort()
+                tps_crowded_improvement = tps[:, keep]
+                fps_crowded_improvement = fps[:, keep]
+                keep = list(set(inds) - set(tps_larger_bbs_improvement_keep))
+                keep.sort()
+                tps_larger_bbs_improvement = tps[:, keep]
+                fps_larger_bbs_improvement = fps[:, keep]
+                keep = list(set(inds) - set(tps_body_parts_improvement_keep))
+                keep.sort()
+                tps_body_parts_improvement = tps[:, keep]
+                fps_body_parts_improvement = fps[:, keep]
+                keep = list(set(inds) - set(tps_background_improvement_keep))
+                keep.sort()
+                tps_background_improvement = tps[:, keep]
+                fps_background_improvement = fps[:, keep]
+                tps = tps[:, inds]
+                fps = fps[:, inds]
 
                 dt_error_type = dt_error_type[:, inds]
                 dtIds = dtIds[inds]
@@ -603,18 +605,24 @@ class COCOeval_citypersons:
                     fppi_body_parts_improvement = np.array(fp_body_parts_improvement) / I0
                     fppi_background_improvement = np.array(fp_background_improvement) / I0
                     nd = len(tp)
-                    recall = tp / npig
-                    recall_double_detections_improvement = tp_double_detections_improvement / npig
-                    recall_crowded_improvement = tp_crowded_improvement / npig
-                    recall_larger_bbs_improvement = tp_larger_bbs_improvement / npig
-                    recall_body_parts_improvement = tp_body_parts_improvement / npig
-                    recall_background_improvement = tp_background_improvement / npig
+                    nd_tp_double_detections_improvement = len(tp_double_detections_improvement)
+                    nd_tp_crowded_improvement = len(tp_crowded_improvement)
+                    nd_tp_larger_bbs_improvement = len(tp_larger_bbs_improvement)
+                    nd_tp_body_parts_improvement = len(tp_body_parts_improvement)
+                    nd_tp_background_improvement = len(tp_background_improvement)
 
-                    recall_double_detections_improvement[recall_double_detections_improvement>1] = 0.99
-                    recall_crowded_improvement[recall_crowded_improvement > 1] = 0.99
-                    recall_larger_bbs_improvement[recall_larger_bbs_improvement > 1] = 0.99
-                    recall_body_parts_improvement[recall_body_parts_improvement > 1] = 0.99
-                    recall_background_improvement[recall_background_improvement > 1] = 0.99
+                    recall = tp / npig
+                    recall_double_detections_improvement = np.array(tp_double_detections_improvement) / npig
+                    recall_crowded_improvement = np.array(tp_crowded_improvement) / npig
+                    recall_larger_bbs_improvement = np.array(tp_larger_bbs_improvement) / npig
+                    recall_body_parts_improvement = np.array(tp_body_parts_improvement) / npig
+                    recall_background_improvement = np.array(tp_background_improvement) / npig
+
+                    # recall_double_detections_improvement[recall_double_detections_improvement>1] = 0.99
+                    # recall_crowded_improvement[recall_crowded_improvement > 1] = 0.99
+                    # recall_larger_bbs_improvement[recall_larger_bbs_improvement > 1] = 0.99
+                    # recall_body_parts_improvement[recall_body_parts_improvement > 1] = 0.99
+                    # recall_background_improvement[recall_background_improvement > 1] = 0.99
 
                     double_detections_error_rate = double_detections_error / (tp+fp)
                     crowded_error_rate = crowded_error / (tp+fp)
@@ -658,14 +666,19 @@ class COCOeval_citypersons:
                     for i in range(nd - 1, 0, -1):
                         if recall[i] < recall[i - 1]:
                             recall[i - 1] = recall[i]
+                    for i in range(nd_tp_double_detections_improvement - 1, 0, -1):
                         if recall_double_detections_improvement[i] < recall_double_detections_improvement[i - 1]:
                             recall_double_detections_improvement[i - 1] = recall_double_detections_improvement[i]
+                    for i in range(nd_tp_crowded_improvement - 1, 0, -1):
                         if recall_crowded_improvement[i] < recall_crowded_improvement[i - 1]:
                             recall_crowded_improvement[i - 1] = recall_crowded_improvement[i]
+                    for i in range(nd_tp_larger_bbs_improvement - 1, 0, -1):
                         if recall_larger_bbs_improvement[i] < recall_larger_bbs_improvement[i - 1]:
                             recall_larger_bbs_improvement[i - 1] = recall_larger_bbs_improvement[i]
+                    for i in range(nd_tp_body_parts_improvement - 1, 0, -1):
                         if recall_body_parts_improvement[i] < recall_body_parts_improvement[i - 1]:
                             recall_body_parts_improvement[i - 1] = recall_body_parts_improvement[i]
+                    for i in range(nd_tp_background_improvement - 1, 0, -1):
                         if recall_background_improvement[i] < recall_background_improvement[i - 1]:
                             recall_background_improvement[i - 1] = recall_background_improvement[i]
                     inds = np.searchsorted(fppi, p.fppiThrs, side='right') - 1
@@ -848,30 +861,29 @@ class COCOeval_citypersons:
             if len(mrs[mrs<2])==0:
                 mean_s = -1
             else:
-                print(mrs[mrs<2])
                 mean_s = np.log(mrs[mrs<2])
                 mean_s = np.mean(mean_s)
                 mean_s = np.exp(mean_s)
-                # mean_double_detections_improvement = np.exp(np.mean(np.log(double_detections_improvement[double_detections_improvement < 2])))
-                # mean_crowded_error_improvement = np.exp(np.mean(np.log(crowded_error_improvement[crowded_error_improvement < 2])))
-                # mean_larger_bbs_error_improvement = np.exp(np.mean(np.log(larger_bbs_error_improvement[larger_bbs_error_improvement < 2])))
-                # mean_body_parts_error_improvement = np.exp(np.mean(np.log(body_parts_error_improvement[body_parts_error_improvement < 2])))
-                # mean_background_error_improvement = np.exp(np.mean(np.log(background_error_improvement[background_error_improvement < 2])))
+                mean_double_detections_improvement = np.exp(np.mean(np.log(double_detections_improvement[double_detections_improvement < 2])))
+                mean_crowded_error_improvement = np.exp(np.mean(np.log(crowded_error_improvement[crowded_error_improvement < 2])))
+                mean_larger_bbs_error_improvement = np.exp(np.mean(np.log(larger_bbs_error_improvement[larger_bbs_error_improvement < 2])))
+                mean_body_parts_error_improvement = np.exp(np.mean(np.log(body_parts_error_improvement[body_parts_error_improvement < 2])))
+                mean_background_error_improvement = np.exp(np.mean(np.log(background_error_improvement[background_error_improvement < 2])))
 
             show_error_detial = True
 
             out = [iStr.format(titleStr, typeStr,setupStr, iouStr, heightStr, occlStr, mean_s*100)]
             if show_error_detial:
-                out.extend([iStr_error.format("ERROR double", "mean", setupStr,
-                                              str("%.2f" % (double_detections_error_rate[0] * 100)), *[i for i in double_detections_error]),
-                           iStr_error.format("ERROR crowded", "mean", setupStr,
-                                             str("%.2f" % (crowded_error_rate[0] * 100)), *[i for i in crowded_error]),
-                           iStr_error.format("ERROR larger_bbs", "mean", setupStr,
-                                             str("%.2f" % (larger_bbs_error_rate[0] * 100)), *[i for i in larger_bbs_error]),
-                           iStr_error.format("ERROR body_parts", "mean", setupStr,
-                                             str("%.2f" % (body_parts_error_rate[0] * 100)), *[i for i in body_parts_error]),
-                           iStr_error.format("ERROR background", "mean", setupStr,
-                                             str("%.2f" % (background_error_rate[0] * 100)), *[i for i in background_error]),
+                out.extend([iStr_error.format("Improve double", "(MR)", setupStr,
+                                              str("%.2f" % (mean_double_detections_improvement * 100)), *[i for i in double_detections_error]),
+                           iStr_error.format("Improve crowded", "(MR)", setupStr,
+                                             str("%.2f" % (mean_crowded_error_improvement * 100)), *[i for i in crowded_error]),
+                           iStr_error.format("Improve larger_bbs", "(MR)", setupStr,
+                                             str("%.2f" % (mean_larger_bbs_error_improvement * 100)), *[i for i in larger_bbs_error]),
+                           iStr_error.format("Improve body_parts", "(MR)", setupStr,
+                                             str("%.2f" % (mean_body_parts_error_improvement * 100)), *[i for i in body_parts_error]),
+                           iStr_error.format("Improve background", "(MR)", setupStr,
+                                             str("%.2f" % (mean_background_error_improvement * 100)), *[i for i in background_error]),
                            80 * '-'])
             for out_i in out:
                 print(out_i)
