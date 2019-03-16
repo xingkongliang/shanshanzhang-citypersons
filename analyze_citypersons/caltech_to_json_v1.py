@@ -2,17 +2,6 @@
 # -*- coding: utf-8 -*-
 # __author__ : "ZhangTianliang"
 # Date: 18-9-3
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# __author__ : "ZhangTianliang"
-# Date: 18-4-6
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -27,7 +16,15 @@ import os
 import glob
 import scipy.sparse
 import time
+import scipy.io as sio
+import tlutils.utils as utils
+from six.moves import xrange
 
+"""
+Caltech annotations
+
+
+"""
 categories_dict = {1: 'pedestrian'}
 categories3_dict = {'pedestrian': 1}
 
@@ -41,8 +38,9 @@ def check_anno(anno, im_file):
     im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.imshow(im, aspect='equal')
-    for j in range(len(roi['boxes'])):
-        bbox = roi['boxes'][j]
+    for j in range(len(roi['bb_pos'])):
+        posv = roi['bb_posv'][j]  # x, y, w, h
+        bbox = roi['bb_pos'][j]
         class_name = roi['gt_lbl'][j]
         if roi['gt_ignores'][j]:
             edgecolor = 'red'
@@ -50,9 +48,15 @@ def check_anno(anno, im_file):
             edgecolor = 'blue'
         ax.add_patch(
             plt.Rectangle((bbox[0], bbox[1]),
-                          bbox[2] - bbox[0],
-                          bbox[3] - bbox[1], fill=False,
+                          bbox[2],
+                          bbox[3], fill=False,
                           edgecolor=edgecolor, linewidth=3.5)
+            )
+        ax.add_patch(
+            plt.Rectangle((posv[0], posv[1]),
+                          bbox[2],
+                          posv[3], fill=False,
+                          edgecolor='green', linewidth=1)
             )
         ax.text(bbox[0], bbox[1] - 2,
                 '{:s}'.format(class_name),
@@ -67,17 +71,28 @@ def check_anno(anno, im_file):
     plt.close()
 
 
+def clip_xyxy_to_image(x1, y1, x2, y2, height, width):
+    """Clip coordinates to an image with the given height and width."""
+    x1 = np.minimum(width - 1., np.maximum(0., x1))
+    y1 = np.minimum(height - 1., np.maximum(0., y1))
+    x2 = np.minimum(width - 1., np.maximum(0., x2))
+    y2 = np.minimum(height - 1., np.maximum(0., y2))
+    return x1, y1, x2, y2
+
+
 class caltech_to_coco():
     def __init__(self, image_set, set, devkit_path):
         self._name = 'caltech_' + image_set
         self._image_set = image_set
         self._devkit_path = devkit_path
+        self._image_width = 640
+        self._image_height = 480
         self._set = set
         self._lbls = 'person'             # return objs with these labels (or [] to return all)
         self._ilbls = ['people', 'ignore']            # return objs with these labels but set to ignore
         self._squarify = [0.41]           # controls optional reshaping of bbs to fixed aspect ratio
-        self._hRng = [30, np.inf]         # acceptable obj heights
-        self._vRng = [1, 1]               # acceptable obj occlusion levels
+        self._hRng = [40, np.inf]         # acceptable obj heights
+        self._vRng = [0.30, 1.0]          # acceptable obj occlusion levels
 
         self._data_path = os.path.join(self._devkit_path)
 
@@ -138,10 +153,10 @@ class caltech_to_coco():
         def is_inset(file):
             return file.split('/')[-1].split('_')[0] in self._set
 
-        images_files = filter(is_inset, images_files)
+        images_files = list(filter(is_inset, images_files))
 
-        image_index = map(lambda x: x.split('/')[-1].split('.')[0], images_files)
-        annotations_files = map(lambda x: x.replace('images', 'annotations').replace('jpg', 'txt'), images_files)
+        image_index = list(map(lambda x: x.split('/')[-1].split('.')[0], images_files))
+        annotations_files = list(map(lambda x: x.replace('images', 'annotations').replace('jpg', 'txt'), images_files))
 
         return images_files, image_index, annotations_files
 
@@ -155,12 +170,33 @@ class caltech_to_coco():
             # obj_dict = dict(zip(keys, [id, pos, occl, lock, posv]))
             obj_dict['lbl'] = obj[0]
             pos = [int(obj[j]) for j in xrange(1, 5)]
-            obj_dict['pos'] = pos
+            obj_dict['bb_pos'] = pos
             obj_dict['occ'] = int(obj[5])
             posv = [int(obj[j]) for j in xrange(6, 10)]
-            obj_dict['posv'] = posv
+            obj_dict['bb_posv'] = posv
             obj_dict['ign'] = int(obj[10])
             obj_dict['ang'] = int(obj[11])
+
+            x1 = float(obj_dict['bb_pos'][0])
+            y1 = float(obj_dict['bb_pos'][1])
+            x2 = float(obj_dict['bb_pos'][0] + obj_dict['bb_pos'][2])
+            y2 = float(obj_dict['bb_pos'][1] + obj_dict['bb_pos'][3])
+            x1, y1, x2, y2 = utils.boxes.clip_xyxy_to_image(x1, y1, x2, y2, self._image_height, self._image_width)
+            assert x2 >= x1
+            assert y2 >= y1
+
+            # for vis boxes
+            xv1 = float(obj_dict['bb_posv'][0])
+            yv1 = float(obj_dict['bb_posv'][1])
+            xv2 = float(obj_dict['bb_posv'][0] + obj_dict['bb_posv'][2])
+            yv2 = float(obj_dict['bb_posv'][1] + obj_dict['bb_posv'][3])
+            xv1, yv1, xv2, yv2 = utils.boxes.clip_xyxy_to_image(xv1, yv1, xv2, yv2, self._image_height, self._image_width)
+            assert xv2 >= xv1
+            assert yv2 >= yv1
+
+            obj_dict['bb_pos'] = [x1, y1, x2-x1, y2-y1]
+            obj_dict['bb_posv'] = [xv1, yv1, xv2-xv1, yv2-yv1]
+
             objs_list.append(obj_dict)
 
         del objs
@@ -175,25 +211,26 @@ class caltech_to_coco():
                 objs[i]['ign'] = objs[i]['ign'] or objs[i]['lbl'] in self._ilbls
         if self._hRng is not None:
             for i in range(len(objs)):
-                v = objs[i]['pos'][3]
+                v = objs[i]['bb_pos'][3]
                 objs[i]['ign'] = objs[i]['ign'] or v < self._hRng[0] or v > self._hRng[1]
         if self._vRng is not None:
             for i in range(len(objs)):
-                bb = objs[i]['pos']
-                bbv = objs[i]['posv']
+                bb = objs[i]['bb_pos']
+                bbv = objs[i]['bb_posv']
                 if (not objs[i]['occ']) or sum(bbv) == 0:
                     v = 1
                 elif bbv == bb:
                     v = 0
                 else:
                     v = (bbv[2] * bbv[3]) * 1.0 / (bb[2] * bb[3])
+                assert v <= 1.0
                 objs[i]['ign'] = objs[i]['ign'] or v < self._vRng[0] or v > self._vRng[1]
         if self._squarify is not None:
             for i in range(len(objs)):
                 if not objs[i]['ign']:
-                    d = objs[i]['pos'][3] * self._squarify[0] - objs[i]['pos'][2]
-                    objs[i]['pos'][0] = objs[i]['pos'][0] - float(d) / 2
-                    objs[i]['pos'][2] = objs[i]['pos'][2] + d
+                    d = objs[i]['bb_pos'][3] * self._squarify[0] - objs[i]['bb_pos'][2]
+                    objs[i]['bb_pos'][0] = objs[i]['bb_pos'][0] - float(d) / 2
+                    objs[i]['bb_pos'][2] = objs[i]['bb_pos'][2] + d
         # bbs - [nx5] array containing ground truth bbs [x y w h ignore]
         # bbs = []
         return objs
@@ -212,7 +249,8 @@ class caltech_to_coco():
 
         objs = self._bbGt(objs)
         num_objs = len(objs)
-        boxes = np.zeros((num_objs, 4), dtype=np.uint16)
+        bb_pos = np.zeros((num_objs, 4), dtype=np.uint16)
+        bb_posv = np.zeros((num_objs, 4), dtype=np.uint16)
         gt_classes = np.zeros((num_objs), dtype=np.int32)
         overlaps = np.zeros((num_objs, self.num_classes), dtype=np.float32)
         gt_ignores = np.zeros((num_objs), dtype=np.uint16)
@@ -223,36 +261,18 @@ class caltech_to_coco():
         # Load object bounding boxes into a data frame.
         for ix, obj in enumerate(objs):
             # Make pixel indexes 0-based
-            x1 = float(obj['pos'][0])
-            y1 = float(obj['pos'][1])
-            x2 = float(obj['pos'][0] + obj['pos'][2] - 1)
-            y2 = float(obj['pos'][1] + obj['pos'][3] - 1)
-            if x1 < 0 or x1 > 640:
-                x1 = 0
-            if x2 < 0 or x2 > 640:
-                x2 = 640
-            if y1 < 0 or y1 > 480:
-                y1 = 0
-            if y2 < 0 or y2 > 480:
-                y2 = 480
-            if x2 < x1:
-                x2 = x1 + 1
-                obj['ign'] = 1
-            if y2 < y1:
-                y2 = y1 + 1
-                obj['ign'] = 1
-            assert x2 >= x1
-            assert y2 >= y1
             cls = self._class_to_ind['pedestrian']
-            boxes[ix, :] = [x1, y1, x2, y2]
+            bb_pos[ix, :] = obj['bb_pos']
+            bb_posv[ix, :] = obj['bb_posv']
             gt_classes[ix] = cls
             overlaps[ix, cls] = 1.0
-            seg_areas[ix] = (x2 - x1 + 1) * (y2 - y1 + 1)
+            seg_areas[ix] = obj['bb_pos'][2] * obj['bb_pos'][3]
             gt_ignores[ix] = obj['ign']
             gt_lbl.append(obj['lbl'])
         overlaps = scipy.sparse.csr_matrix(overlaps)
 
-        return {'boxes': boxes,
+        return {'bb_pos': bb_pos,
+                'bb_posv': bb_posv,
                 'gt_classes': gt_classes,
                 'gt_overlaps': overlaps,
                 'flipped': False,
@@ -260,47 +280,59 @@ class caltech_to_coco():
                 'gt_ignores': gt_ignores,
                 'gt_lbl': gt_lbl}
 
-    def caltech_to_coco_train(self):
+    def caltech_to_coco_train(self, is_train=False, vis=False):
         coco_dict = dict()
         coco_dict[u'images'] = []
         coco_dict[u'annotations'] = []
         anno_id = 1
+        count = 0
+        count_using_images = 0
         print('Num of Caltech Images: ', len(self.image_index))
 
         for image_id, idx in enumerate(self.image_index):
             print('---', image_id, '---', len(self._annotations_files))
             anno = self._load_caltech_annotation(idx)
-            if anno['boxes'].shape[0] == 0 or len(anno['gt_ignores'])-sum(anno['gt_ignores']) == 0:
+            if anno['bb_pos'].shape[0] == 0 or len(anno['gt_ignores'])-sum(anno['gt_ignores']) == 0:
                 continue
+            else:
+                count_using_images += 1
 
             image_name = '{}.jpg'.format(idx)
             image_file = self.image_path_from_index(idx)
-            img = cv2.imread(image_file, 0)
-            height, width = img.shape
+
+            if (count % 10 == 0) and vis and anno['bb_pos'].shape[0] != 0:
+                check_anno(anno, image_file)
+
+            count += 1
+            # img = cv2.imread(image_file, 0)
+            # height, width = img.shape
             # check_anno(anno, image_file)
 
-            # gt_inds = np.where(anno['gt_classes'] != 0)[0]
-            # gt_boxes = np.empty((len(gt_inds), 5), dtype=np.float32)
-            # gt_boxes[:, 0:4] = anno['boxes'][gt_inds, :]
-
             # images
-            image_dict = {u'file_name': image_name.decode('utf-8'),
-                          u'height': height,
+            image_dict = {u'file_name': image_name,  # image_name.decode('utf-8'),
+                          u'height': self._image_height,
                           u'id': image_id,
-                          u'width': width}
+                          u'width': self._image_width}
             coco_dict[u'images'].append(image_dict)
 
             # annotations
-            for j in range(len(anno['boxes'])):
-                if anno['gt_ignores'][j] == 1:
-                    continue
-                x1, y1, x2, y2 = anno['boxes'][j]
-                bbox = [int(x1), int(y1), int(x2 - x1 + 1), int(y2 - y1 + 1)]  # [x,y,width,height]
+            for j in range(len(anno['bb_pos'])):
+                # if anno['gt_ignores'][j] == 1:
+                #     continue
+
+                x1, y1, w, h = anno['bb_pos'][j]
+                bb_pos = [int(x1), int(y1), int(w), int(h)]  # [x,y,width,height]
+                xv1, yv1, wv, hv = anno['bb_posv'][j]
+                bb_posv = [int(xv1), int(yv1), int(wv), int(hv)]  # [x,y,width,height]
+                ingore = int(anno['gt_ignores'][j])
+
                 annotation_dict = {u'segmentation': [[]],
-                                   u'area': (x2 - x1 + 1) * (y2 - y1 + 1),
+                                   u'area': int(anno['seg_areas'][j]),
                                    u'iscrowd': 0,  #
                                    u'image_id': image_id,
-                                   u'bbox': bbox,
+                                   u'bbox': bb_pos,   # [x,y,width,height]
+                                   u'posv': bb_posv,  # [x,y,width,height]
+                                   u'ignore': ingore,
                                    u'category_id': self._class_to_ind['pedestrian'],
                                    u'id': anno_id}
                 coco_dict[u'annotations'].append(annotation_dict)
@@ -321,7 +353,11 @@ class caltech_to_coco():
         coco_dict[u'categories'] = coco_categories
         coco_dict[u'type'] = coco_type
 
-        print('{} pedestrians.'.format(anno_id-1))
+        print("Height                   : {}".format(self._hRng[0]))
+        print("Visible body level       : {}-{}".format(self._vRng[0], self._vRng[1]))
+        print("The number of pedestrians: {}".format(anno_id-1))
+        print('Num of Caltech Images    : {}'.format(len(self.image_index)))
+        print("The number of used images: {}".format(count_using_images))
         return coco_dict
 
     def caltech_to_coco_test(self, vis=False):
@@ -334,8 +370,6 @@ class caltech_to_coco():
         for image_id, idx in enumerate(self.image_index):
             print('---', image_id, '---', len(self._annotations_files))
             anno = self._load_caltech_annotation(idx)
-            # if anno['boxes'].shape[0] == 0 or len(anno['gt_ignores'])-sum(anno['gt_ignores']) == 0:
-            #    continue
 
             image_name = '{}.jpg'.format(idx)
             image_file = self.image_path_from_index(idx)
@@ -343,10 +377,6 @@ class caltech_to_coco():
             height, width = img.shape
             if vis and anno['boxes'].shape[0] != 0:
                 check_anno(anno, image_file)
-
-            # gt_inds = np.where(anno['gt_classes'] != 0)[0]
-            # gt_boxes = np.empty((len(gt_inds), 5), dtype=np.float32)
-            # gt_boxes[:, 0:4] = anno['boxes'][gt_inds, :]
 
             # images
             image_dict = {u'file_name': image_name.decode('utf-8'),
@@ -392,40 +422,25 @@ class caltech_to_coco():
 
 if __name__ == '__main__':
     print('Convert Caltech Data to COCO Format...')
-    caltech_root = '/media/tianliang/Projects/Caffe2_Projects/detectron-data/pedestrian_datasets/data-USA'
+    caltech_root = '/media/tianliang/DATA/DataSets/Pedestrian_Datasets/data-USA'
     image_set = 'train'
     trainval_set = ['set{:0>2}'.format(i) for i in range(0, 6)]
     train_set = ['set{:0>2}'.format(i) for i in range(0, 5)]
     val_set = ['set{:0>2}'.format(i) for i in range(5, 6)]
     test_set = ['set{:0>2}'.format(i) for i in range(6, 11)]
 
-    # caltech = caltech_to_coco(image_set, train_set, caltech_root)
-    # coco_dict_train = caltech.caltech_to_coco_train()
-    #
-    # f = open('/home/tianliang/SSAP2/Cloud/Caffe2_projects/detectron/lib/datasets/data/'
-    #          'pedestrian_datasets/data-USA/json_annotations/caltech_train.json', 'w')
-    # f.write(json.dumps(coco_dict_train))
-    # f.close()
-    #
-    # caltech = caltech_to_coco(image_set, val_set, caltech_root)
-    # coco_dict_val = caltech.caltech_to_coco_train()
-    #
-    # f = open('/home/tianliang/SSAP2/Cloud/Caffe2_projects/detectron/lib/datasets/data/'
-    #          'pedestrian_datasets/data-USA/json_annotations/caltech_val.json', 'w')
-    # f.write(json.dumps(coco_dict_val))
-    # f.close()
-    #
     caltech = caltech_to_coco(image_set, trainval_set, caltech_root)
-    coco_dict_trainval = caltech.caltech_to_coco_train()
-    f = open("{}/json_annotations/caltech_trainval.json".format(caltech_root), 'w')
+    train_json_name = "caltech_o{}h{}_trainval.json".format(str(int(caltech._vRng[0]*100)), str(caltech._hRng[0]))
+    coco_dict_trainval = caltech.caltech_to_coco_train(is_train=True, vis=False)
+    f = open("{}/json_annotations/{}".format(caltech_root, train_json_name), 'w')
     f.write(json.dumps(coco_dict_trainval))
     f.close()
 
-    caltech = caltech_to_coco('test', test_set, caltech_root)
-    coco_dict_test = caltech.caltech_to_coco_test(vis=False)
-    f = open("{}/json_annotations/caltech_test.json".format(caltech_root), 'w')
-    f.write(json.dumps(coco_dict_test))
-    f.close()
+    # caltech = caltech_to_coco('test', test_set, caltech_root)
+    # coco_dict_test = caltech.caltech_to_coco_test(vis=False)
+    # f = open("{}/json_annotations/caltech_test.json".format(caltech_root), 'w')
+    # f.write(json.dumps(coco_dict_test))
+    # f.close()
 
 
     print('Done.')

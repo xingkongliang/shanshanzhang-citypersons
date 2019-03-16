@@ -360,7 +360,7 @@ class dataset_to_coco():
         coco_dict[u'annotations'] = []
         anno_id = 1
         count = 0
-        print('Num of Caltech Images: ', len(self.image_index))
+        print('Num of CityPersons Images: ', len(self.image_index))
         # f_train = open("{}.txt".format(self._image_set), "w")
         # image_dir = "/media/tianliang/DATA/DataSets/Cityscapes/leftImg8bit/{}/".format(self._image_set)
         for image_id, idx in enumerate(self.image_index):
