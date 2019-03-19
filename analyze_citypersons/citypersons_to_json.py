@@ -179,7 +179,7 @@ class dataset_to_coco():
         # self._vRng = [0.2, 1]              # acceptable obj occlusion levels
         # For CityPersons
         self._hRng = [40, np.inf]              # acceptable obj heights
-        self._vRng = [0.50, 1.0]               # acceptable obj visible levels
+        self._vRng = [0.40, 1.0]               # acceptable obj visible levels
 
         self._data_path = os.path.join(self._devkit_path)
 
