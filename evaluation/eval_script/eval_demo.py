@@ -22,20 +22,23 @@ annType = 'bbox'      #specify type here
 # print('Running demo for *%s* results.'%(annType))
 # iterations = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
 iterations = [40000]
-version = 'v23_01'
+version = 'v48_02'
 
 # iteration = 30000
 for iteration in iterations:
     print(version, iteration)
     val_dataset = 'citypersons_o20h20_val'
-    root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark_visible_rate/Output/inference'
+    # root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark_visible_rate/Output/inference'
     # root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark/Output/inference'
+    root = "/media/tianliang/Cloud/PyTorch_Projects/ICCV19_detections/val_test_results"
     cfg_file = "e2e_faster_rcnn_R_50_C4_1x_1_gpu_citypersons_{}".format(version)
 
-    res_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox.json')
+    # res_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox.json')
+    res_dir = os.path.join(root, "8_gpu_{}_valset_bbox.json".format(version))
+    output_dir = os.path.join(root, "8_gpu_{}_valset_bbox.txt".format(version))
     # res_dir = '../val_groundtruth_dt.json'
     annFile = '../val_gt.json'
-    output_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox_2.txt')
+    # output_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox_2.txt')
     # running evaluation
     res_file = open(output_dir, "w")
     res = []

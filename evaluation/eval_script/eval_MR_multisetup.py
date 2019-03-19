@@ -6,6 +6,7 @@ from collections import defaultdict
 import copy
 import matplotlib.pyplot as plt
 import scipy.io as sio
+import json
 
 class COCOeval_citypersons:
     # Interface for evaluating detection on the Microsoft COCO dataset.
@@ -624,11 +625,11 @@ class COCOeval_citypersons:
                     # recall_body_parts_improvement[recall_body_parts_improvement > 1] = 0.99
                     # recall_background_improvement[recall_background_improvement > 1] = 0.99
 
-                    double_detections_error_rate = double_detections_error / (tp+fp)
-                    crowded_error_rate = crowded_error / (tp+fp)
-                    larger_bbs_error_rate = larger_bbs_error / (tp+fp)
-                    body_parts_error_rate = body_parts_error / (tp+fp)
-                    background_error_rate = background_error / (tp+fp)
+                    double_detections_error_rate = double_detections_error / fp  # (tp+fp)
+                    crowded_error_rate = crowded_error / fp
+                    larger_bbs_error_rate = larger_bbs_error / fp
+                    body_parts_error_rate = body_parts_error / fp
+                    background_error_rate = background_error / fp
 
                     double_detections_error_ae = self.calc_detection_voc_ae([double_detections_error_rate], [recall], use_07_metric=True)
                     crowded_error_ae = self.calc_detection_voc_ae([crowded_error_rate], [recall], use_07_metric=True)
@@ -690,6 +691,16 @@ class COCOeval_citypersons:
                     inds_recall = np.searchsorted(recall, [0.1*i for i in range(1, 11)], side='right') - 1
                     vis = False
                     if vis:
+                        # out_dict = {"double_detections_error_rate_fppi": list(double_detections_error_rate),
+                        #             "crowded_error_rate_fppi": list(crowded_error_rate),
+                        #             "larger_bbs_error_rate_fppi": list(larger_bbs_error_rate),
+                        #             "body_parts_error_rate": list(body_parts_error_rate),
+                        #             "background_error_rate": list(background_error_rate)}
+                        # json_error_rate_file = '/media/tianliang/Cloud/PyTorch_Projects/ICCV19_detections/val_test_results/' \
+                        #                        '8_gpu_v48_02_valset_bbox_error_rate.json'
+                        # # np.save(json_error_rate_file, out_dict)
+                        # with open(json_error_rate_file, "w") as f:
+                        #     json.dump(out_dict, f)
                         fig, axes = plt.subplots(1, 1, figsize=(5, 5))
                         axes.plot(np.arange(len(double_detections_error_rate)), double_detections_error_rate, 'b-', label="double_detections")
                         axes.plot(np.arange(len(crowded_error_rate)), crowded_error_rate, 'r-', label="crowded")

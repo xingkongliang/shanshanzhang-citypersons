@@ -179,7 +179,7 @@ class dataset_to_coco():
         # self._vRng = [0.2, 1]              # acceptable obj occlusion levels
         # For CityPersons
         self._hRng = [40, np.inf]              # acceptable obj heights
-        self._vRng = [0.30, 1.0]               # acceptable obj visible levels
+        self._vRng = [0.50, 1.0]               # acceptable obj visible levels
 
         self._data_path = os.path.join(self._devkit_path)
 
@@ -565,7 +565,7 @@ if __name__ == '__main__':
     # image_set = 'test'
     # citypersons = dataset_to_coco(image_set, citypersons_root)
     # coco_dict_test = citypersons.dataset_to_coco_test()
-    # f = open(os.path.join(annotations_dir, 'citypersons_test.json'), 'w')
+    # f = open(os.path.join(annotations_dir, 'citypersons_test_forvis.json'), 'w')
     # f.write(json.dumps(coco_dict_test))
     # f.close()
 
