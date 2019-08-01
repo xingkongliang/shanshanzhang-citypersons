@@ -691,16 +691,16 @@ class COCOeval_citypersons:
                     inds_recall = np.searchsorted(recall, [0.1*i for i in range(1, 11)], side='right') - 1
                     vis = False
                     if vis:
-                        # out_dict = {"double_detections_error_rate_fppi": list(double_detections_error_rate),
-                        #             "crowded_error_rate_fppi": list(crowded_error_rate),
-                        #             "larger_bbs_error_rate_fppi": list(larger_bbs_error_rate),
-                        #             "body_parts_error_rate": list(body_parts_error_rate),
-                        #             "background_error_rate": list(background_error_rate)}
-                        # json_error_rate_file = '/media/tianliang/Cloud/PyTorch_Projects/ICCV19_detections/val_test_results/' \
-                        #                        '8_gpu_v48_02_valset_bbox_error_rate.json'
-                        # # np.save(json_error_rate_file, out_dict)
-                        # with open(json_error_rate_file, "w") as f:
-                        #     json.dump(out_dict, f)
+                        out_dict = {"double_detections_error_rate_fppi": list(double_detections_error_rate),
+                                    "crowded_error_rate_fppi": list(crowded_error_rate),
+                                    "larger_bbs_error_rate_fppi": list(larger_bbs_error_rate),
+                                    "body_parts_error_rate": list(body_parts_error_rate),
+                                    "background_error_rate": list(background_error_rate)}
+                        json_error_rate_file = '/media/tianliang/Cloud/PyTorch_Projects/ICCV19_detections/0321_CityPersons_Results/v42_04/' \
+                                               '8_gpu_v42_04_valset_bbox_error_rate.json'
+                        # np.save(json_error_rate_file, out_dict)
+                        with open(json_error_rate_file, "w") as f:
+                            json.dump(out_dict, f)
                         fig, axes = plt.subplots(1, 1, figsize=(5, 5))
                         axes.plot(np.arange(len(double_detections_error_rate)), double_detections_error_rate, 'b-', label="double_detections")
                         axes.plot(np.arange(len(crowded_error_rate)), crowded_error_rate, 'r-', label="crowded")
@@ -927,13 +927,13 @@ class Params:
 
         self.iouThrs = np.array([0.5])  # np.linspace(.5, 0.95, np.round((0.95 - .5) / .05) + 1, endpoint=True)
 
-        self.HtRng = [[50, 1e5 ** 2], [50,75], [50, 1e5 ** 2], [20, 1e5 ** 2],
+        self.HtRng = [[50, 1e5 ** 2], [50,75], [50, 1e5 ** 2], [50, 1e5 ** 2], [20, 1e5 ** 2],
                       [50, 1e5 ** 2], [50, 1e5 ** 2], [50, 1e5 ** 2], [50, 1e5 ** 2],
                       [50, 1e5 ** 2], [50, 1e5 ** 2], [50, 1e5 ** 2]]
-        self.VisRng = [[0.65, 1e5 ** 2], [0.65, 1e5 ** 2], [0.2,0.65], [0.2, 1e5 ** 2],
+        self.VisRng = [[0.65, 1e5 ** 2], [0.65, 1e5 ** 2], [0.2, 0.65], [0.2, 1e5 ** 2], [0.2, 1e5 ** 2],
                        [0.2, 1e5 ** 2], [1, 1e5 ** 2], [0.65, 1.0], [0.2, 0.65],
-                       [0, 0.65], [0.65, 0.90], [0.90, 1.0]]
-        self.SetupLbl = ['Reasonable', 'Reasonable_small', 'Reasonable_occ=heavy', 'All',
+                       [0.2, 0.65], [0.65, 0.90], [0.90, 1e5 ** 2]]
+        self.SetupLbl = ['Reasonable', 'Reasonable_small', 'Reasonable_occ=heavy(RO)', 'RO+H', 'All',
                          'All-50', 'R_occ=None', 'R_occ=Partial', 'R_occ=heaavy',
                          'Heavy', 'Partial', 'Bare']
 

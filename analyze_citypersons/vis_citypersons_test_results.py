@@ -31,7 +31,7 @@ def main():
     annType = 'bbox'      #specify type here
     print('Running demo for *%s* results.'%(annType))
     plot_ignore = True
-    version = 'testset_v42_04'
+    version = 'FA_v1'
     iteration = '30000'
     GPU = '1_gpu'
     root = '/media/tianliang/Projects/Caffe2_Projects/detectron-data/citypersons/leftImg8bit'
@@ -41,10 +41,10 @@ def main():
     project_dir = os.path.dirname(os.path.dirname(__file__))
     print("project dir: ", project_dir)
     cfg_file = "e2e_faster_rcnn_R_50_C4_1x_{}_citypersons_{}".format(GPU, version)
-    dt_file = "/media/tianliang/Cloud/PyTorch_Projects/ICCV19_detections/val_test_results/8_gpu_v42_04_improved_testset_bbox.json"
+    dt_file = "/media/tianliang/DATA/DataSets/Cityscapes/shanshanzhang-citypersons/res/val/citypersons_free_anchor_R-50-FPN_1gpu_1x/bbox_test.json"
     # dt_file = os.path.join(project_dir, "res/val/{}/{}/{}/bbox.json".format(cfg_file, val_dataset, iteration))
     # root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark_visible_rate/Output/inference'
-    gt_file = "/media/tianliang/DATA/DataSets/Cityscapes/shanshanzhang-citypersons/json_annotations/citypersons_test_forvis.json"
+    gt_file = "/media/tianliang/DATA/DataSets/Cityscapes/shanshanzhang-citypersons/json_annotations/citypersons_test.json"
     # gt_file = os.path.join(project_dir, 'evaluation/val_gt.json')
     output_dir = os.path.join(project_dir, 'img_output', version)
     print("Output dir: {}".format(output_dir))

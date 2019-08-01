@@ -623,21 +623,21 @@ class COCOeval_citypersons:
                     bbox = d['bbox']
                     score = d['score']
                     for gt_bbox in targets_clearn_bbox:
-                        im = vis.vis_bbox(im, gt_bbox, color._GREEN, thick=2)
+                        im = vis.vis_bbox(im, gt_bbox, color._GREEN, thick=3)
                     for gt_bbox in targets_ignore_bbox:
-                        im = vis.vis_bbox(im, gt_bbox, color._YELLOW, thick=2)
+                        im = vis.vis_bbox(im, gt_bbox, color._YELLOW, thick=3)
                     if 'proposals' in d.keys():
                         proposal = d['proposals']
                         objectness = d['objectness']
-                        im = vis.vis_bbox(im, proposal, color._BLUE, thick=2)
+                        im = vis.vis_bbox(im, proposal, color._BLUE, thick=3)
                         im = vis.vis_class(im, (bbox[0], bbox[1] - 16),
                                            str("{:.2f}".format(objectness)),
                                            color=color._YELLOW, font_scale=0.5)
-                    im = vis.vis_bbox(im, bbox, color._RED, thick=2)
-                    im = vis.vis_class(im, (bbox[0], bbox[1] - 30),
+                    im = vis.vis_bbox(im, bbox, color._RED, thick=3)
+                    im = vis.vis_class(im, (bbox[0], bbox[1] - 10),
                                    str("{:.2f}".format(score)),
                                    color=color._LIME, font_scale=0.5)
-                    im = vis.vis_class(im, (bbox[0], bbox[1] - 44),
+                    im = vis.vis_class(im, (bbox[0], bbox[1] - 24),
                                        str("{}".format(num_to_error_type[this_detection_error_type])),
                                        color=color._LIME, font_scale=0.5)
                     output_dir = "/media/tianliang/DATA/DataSets/Cityscapes/shanshanzhang-citypersons/" \

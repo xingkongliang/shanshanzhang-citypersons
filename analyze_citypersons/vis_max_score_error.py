@@ -25,9 +25,9 @@ subset = {
 
 annType = 'bbox'      #specify type here
 
-version = 'v30_01'
+version = 'v51_14'
 iteration = 30000
-id_setup = subset['Bare']
+id_setup = subset['Reasonable']
 # ----------------------------------------------------------
 print(version, iteration, id_setup)
 val_dataset = 'citypersons_o20h20_val'
@@ -35,8 +35,11 @@ root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark_visible_rate/
 # root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark/Output/inference'
 cfg_file = "e2e_faster_rcnn_R_50_C4_1x_1_gpu_citypersons_{}".format(version)
 
-res_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox.json')
+# res_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox.json')
+project_dir = os.path.dirname(os.path.dirname(__file__))
+res_dir = os.path.join(project_dir, "res/val/{}/bbox_new.json".format(version))
 annFile = '../evaluation/val_gt.json'
+# annFile = os.path.join(project_dir, 'json_annotations/citypersons_o20h50_val.json')
 output_dir = os.path.join('/tmp/bbox_2.txt')
 
 res_file = open(output_dir, "w")

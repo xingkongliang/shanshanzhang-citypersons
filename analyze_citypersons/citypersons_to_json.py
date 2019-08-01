@@ -165,9 +165,9 @@ class dataset_to_coco():
         self._images_dir = 'leftImg8bit'
         self._citypersons_classes = ['ignore', 'pedestrians', 'riders', 'sitting-persons', 'other', 'people']
         self._lbls = ['pedestrians']         # return objs with these labels (or [] to return all)
-        # self._ilbls = ['ignore', 'riders', 'sitting-persons', 'other', 'people']  # return objs with these labels but set to ignore
+        self._ilbls = ['ignore', 'riders', 'sitting-persons', 'other', 'people']  # return objs with these labels but set to ignore
         # remote sitting-persons, set it as negative
-        self._ilbls = ['ignore', 'riders', 'other', 'people']  # return objs with these labels but set to ignore
+        # self._ilbls = ['ignore', 'riders', 'other', 'people']  # return objs with these labels but set to ignore
         # self._squarify = [0.41]             # controls optional reshaping of bbs to fixed aspect ratio
         # self._hRng = [30, np.inf]           # acceptable obj heights
         # self._vRng = [1, 1]               # no occlusion, acceptable obj occlusion levels
@@ -178,8 +178,8 @@ class dataset_to_coco():
         # self._hRng = None              # acceptable obj heights
         # self._vRng = [0.2, 1]              # acceptable obj occlusion levels
         # For CityPersons
-        self._hRng = [40, np.inf]              # acceptable obj heights
-        self._vRng = [0.40, 1.0]               # acceptable obj visible levels
+        self._hRng = [50, np.inf]              # acceptable obj heights
+        self._vRng = [0.65, 2.0]               # acceptable obj visible levels
 
         self._data_path = os.path.join(self._devkit_path)
 
@@ -382,7 +382,7 @@ class dataset_to_coco():
             # images
             image_dict = {u'file_name': image_name,  # image_name.decode('utf-8'),
                           u'height': self._image_height,
-                          u'id': image_id,
+                          u'id': image_id + 1,
                           u'width': self._image_width}
             coco_dict[u'images'].append(image_dict)
 
@@ -408,7 +408,7 @@ class dataset_to_coco():
                                    u'area': int(anno['seg_areas'][j]),
                                    u'iscrowd': 0,  #
                                    # TODO: u'image_id': image_id+1, fix this bug
-                                   u'image_id': image_id,
+                                   u'image_id': image_id + 1,
                                    u'bbox': bb_pos,   # [x,y,width,height]
                                    u'posv': bb_posv,  # [x,y,width,height]
                                    u'ignore': ingore,
@@ -464,7 +464,7 @@ class dataset_to_coco():
             # images
             image_dict = {u'file_name': image_name_with_city,
                           u'height': self._image_height,
-                          u'id': image_id,
+                          u'id': image_id + 1,
                           u'width': self._image_width}
 
             coco_dict[u'images'].append(image_dict)
@@ -561,11 +561,11 @@ if __name__ == '__main__':
     # f = open(os.path.join(annotations_dir, val_json_name), 'w')
     # f.write(json.dumps(coco_dict_val))
     # f.close()
-    #
+
     # image_set = 'test'
     # citypersons = dataset_to_coco(image_set, citypersons_root)
     # coco_dict_test = citypersons.dataset_to_coco_test()
-    # f = open(os.path.join(annotations_dir, 'citypersons_test_forvis.json'), 'w')
+    # f = open(os.path.join(annotations_dir, 'citypersons_test.json'), 'w')
     # f.write(json.dumps(coco_dict_test))
     # f.close()
 

@@ -7,7 +7,8 @@ import os
 classes = [
     'Average Miss Rate  (MR) @ Reasonable         [ IoU=0.50',
     'Average Miss Rate  (MR) @ Reasonable_small',
-    'Average Miss Rate  (MR) @ Reasonable_occ=heavy',
+    'Average Miss Rate  (MR) @ Reasonable_occ=heavy(RO)',
+    'Average Miss Rate  (MR) @ RO+H ',
     'Average Miss Rate  (MR) @ All                [ IoU=0.50',
     'Average Miss Rate  (MR) @ All-50',
     'Average Miss Rate  (MR) @ R_occ=None',
@@ -21,8 +22,8 @@ classes = [
 annType = 'bbox'      #specify type here
 # print('Running demo for *%s* results.'%(annType))
 # iterations = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
-iterations = [40000]
-version = 'v48_02'
+iterations = [30000]
+version = 'v42_04'
 
 # iteration = 30000
 for iteration in iterations:
@@ -30,19 +31,19 @@ for iteration in iterations:
     val_dataset = 'citypersons_o20h20_val'
     # root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark_visible_rate/Output/inference'
     # root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark/Output/inference'
-    root = "/media/tianliang/Cloud/PyTorch_Projects/ICCV19_detections/val_test_results"
+    root = "/media/tianliang/Cloud/PyTorch_Projects/ICCV19_detections/0321_CityPersons_Results"
     cfg_file = "e2e_faster_rcnn_R_50_C4_1x_1_gpu_citypersons_{}".format(version)
 
     # res_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox.json')
-    res_dir = os.path.join(root, "8_gpu_{}_valset_bbox.json".format(version))
-    output_dir = os.path.join(root, "8_gpu_{}_valset_bbox.txt".format(version))
+    res_dir = os.path.join(root, version, "bbox.json")
+    output_dir = os.path.join(root, version, "{}_valset_new_result.txt".format(version))
     # res_dir = '../val_groundtruth_dt.json'
     annFile = '../val_gt.json'
-    # output_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox_2.txt')
+    # output_dir = os.path.join(root, cfg_file, val_dataset, str(iteration), 'bbox_new.txt')
     # running evaluation
     res_file = open(output_dir, "w")
     res = []
-    for id_setup in range(0, 11):
+    for id_setup in range(0, 12):
         cocoGt = COCO_citypersons(annFile)
         cocoDt = cocoGt.loadRes(res_dir)
         imgIds = sorted(cocoGt.getImgIds())

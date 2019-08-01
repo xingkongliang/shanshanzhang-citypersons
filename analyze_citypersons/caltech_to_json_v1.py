@@ -91,8 +91,8 @@ class caltech_to_coco():
         self._lbls = 'person'             # return objs with these labels (or [] to return all)
         self._ilbls = ['people', 'ignore']            # return objs with these labels but set to ignore
         self._squarify = [0.41]           # controls optional reshaping of bbs to fixed aspect ratio
-        self._hRng = [40, np.inf]         # acceptable obj heights
-        self._vRng = [0.4, 1.0]          # acceptable obj occlusion levels
+        self._hRng = [50, np.inf]         # acceptable obj heights
+        self._vRng = [0.65, 1.0]          # acceptable obj occlusion levels
 
         self._data_path = os.path.join(self._devkit_path)
 
@@ -172,7 +172,7 @@ class caltech_to_coco():
             pos = [int(float(obj[j])) for j in xrange(1, 5)]
             obj_dict['bb_pos'] = pos
             obj_dict['occ'] = int(obj[5])
-            posv = [int(obj[j]) for j in xrange(6, 10)]
+            posv = [int(float(obj[j])) for j in xrange(6, 10)]
             obj_dict['bb_posv'] = posv
             obj_dict['ign'] = int(obj[10])
             obj_dict['ang'] = int(obj[11])
@@ -223,7 +223,7 @@ class caltech_to_coco():
                     v = 0
                 else:
                     v = (bbv[2] * bbv[3]) * 1.0 / (bb[2] * bb[3])
-                assert v <= 1.0
+                # assert v <= 1.0
                 objs[i]['ign'] = objs[i]['ign'] or v < self._vRng[0] or v > self._vRng[1]
         if self._squarify is not None:
             for i in range(len(objs)):
@@ -292,10 +292,15 @@ class caltech_to_coco():
         for image_id, idx in enumerate(self.image_index):
             print('---', image_id, '---', len(self._annotations_files))
             anno = self._load_caltech_annotation(idx)
-            if anno['bb_pos'].shape[0] == 0 or len(anno['gt_ignores'])-sum(anno['gt_ignores']) == 0:
-                continue
-            else:
-                count_using_images += 1
+            # if anno['bb_pos'].shape[0] == 0 or len(anno['gt_ignores'])-sum(anno['gt_ignores']) == 0:
+            #     random_i = np.random.random(1)[0]
+            #     if random_i > 0.18:
+            #         continue
+            #     else:
+            #         count_using_images += 1
+            # else:
+            #     count_using_images += 1
+            count_using_images += 1
 
             image_name = '{}.jpg'.format(idx)
             image_file = self.image_path_from_index(idx)
@@ -471,18 +476,27 @@ class caltech_to_coco():
 
 if __name__ == '__main__':
     print('Convert Caltech Data to COCO Format...')
-    caltech_root = '/media/tianliang/DATA/DataSets/Pedestrian_Datasets/data-USA'
+    # caltech_root = '/media/tianliang/DATA/DataSets/Pedestrian_Datasets/data-USA'
+    caltech_root = '/media/tianliang/Projects/Caffe2_Projects/detectron-data/pedestrian_datasets/data-USA'
     image_set = 'train'
     trainval_set = ['set{:0>2}'.format(i) for i in range(0, 6)]
     train_set = ['set{:0>2}'.format(i) for i in range(0, 5)]
     val_set = ['set{:0>2}'.format(i) for i in range(5, 6)]
     test_set = ['set{:0>2}'.format(i) for i in range(6, 11)]
 
-    caltech = caltech_to_coco(image_set, trainval_set, caltech_root)
-    train_json_name = "caltech_newo{}h{}_trainval.json".format(str(int(caltech._vRng[0]*100)), str(caltech._hRng[0]))
-    caltech.show_dataset(vis=False)
+    # caltech = caltech_to_coco(image_set, trainval_set, caltech_root)
+    # train_json_name = "caltech_newo{}h{}_trainval.json".format(str(int(caltech._vRng[0]*100)), str(caltech._hRng[0]))
+    # caltech.show_dataset(vis=False)
+    # coco_dict_trainval = caltech.caltech_to_coco_train(is_train=True, vis=False)
+    # f = open("{}/json_annotations/{}".format(caltech_root, train_json_name), 'w')
+    # f.write(json.dumps(coco_dict_trainval))
+    # f.close()
+
+    image_set = 'test'
+    caltech = caltech_to_coco(image_set, test_set, caltech_root)
+    test_json_name = "caltech_test.json"
     coco_dict_trainval = caltech.caltech_to_coco_train(is_train=True, vis=False)
-    f = open("{}/json_annotations/{}".format(caltech_root, train_json_name), 'w')
+    f = open("{}/json_annotations/{}".format(caltech_root, test_json_name), 'w')
     f.write(json.dumps(coco_dict_trainval))
     f.close()
 
