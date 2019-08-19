@@ -141,10 +141,11 @@ def main():
     imgIds_pedestrian = cocoGt.getImgIds(catIds=catIds)
     imgIds_pedestrian = sorted(imgIds_pedestrian)
     # plt.ion()
-    for idx_img in imgIds_pedestrian:
+    # for idx_img in imgIds_pedestrian:
+    for idx_img, img in cocoGt.imgs.items():
         catIds = cocoGt.getCatIds(catNms=['pedestrian'])
         imgIds = cocoGt.getImgIds(catIds=catIds)
-        img = cocoGt.loadImgs(imgIds[idx_img])[0]
+        # img = cocoGt.loadImgs(imgIds[idx_img])[0]
         try:
             im_name_coco = img['im_name']
             im_name = os.path.basename(im_name_coco)
@@ -153,7 +154,7 @@ def main():
             im_name_coco = img['file_name']
             im_name = os.path.basename(im_name_coco)
             im = cv2.imread(os.path.join(root, dataset, im_name_coco))
-        print("{}-----{}------{}".format(idx_img, len(imgIds_pedestrian), im_name_coco))
+        print("{}-----{}------{}".format(idx_img, len(cocoGt.imgs), im_name_coco))
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         annIds = cocoGt.getAnnIds(imgIds=img['id'], catIds=catIds, iscrowd=None)
         anns = cocoGt.loadAnns(annIds)
@@ -166,7 +167,7 @@ def main():
             gt_xywh = np.array(gt_xywh)
             ignore = np.array(ignore)
 
-            img_dt = cocoDt.loadImgs(imgIds[idx_img])[0]
+            img_dt = cocoDt.loadImgs(idx_img)[0]
             # assert img_dt['im_name'] == im_name_coco
             annIds_dt = cocoDt.getAnnIds(imgIds=img_dt['id'], catIds=catIds, iscrowd=None)
             anns_dt = cocoDt.loadAnns(annIds_dt)
@@ -204,7 +205,7 @@ def main():
                 dt, scores, dtIg, dtm, gt, gtIg, gtm, ignore, ious)
             im = draw_bbox_on_image(im, dt_xywh, scores, proposals_xywh, objectness, targets_clearn_bbox,
                                     targets_ignore_bbox, color,
-                                    dt_error_type, draw_proposals=rpn, draw_score=True, linewidth=3)
+                                    dt_error_type, draw_proposals=rpn, draw_score=True, score_threshold=0.2, linewidth=3)
             # im = draw_bbox_on_image_with_errortype(im, dt_xywh, scores, proposals_xywh, objectness, targets_clearn_bbox,
             #                                        targets_ignore_bbox, color, error_type_color_map, dt_error_type,
             #                                        num_to_error_type, draw_proposals=rpn, draw_score=True, linewidth=3)
