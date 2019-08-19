@@ -1,5 +1,7 @@
 # import sys
-# sys.path.insert(0, '../')
+# import os
+# ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
+# sys.path.insert(0, ROOT_PATH)
 from coco_citypersons import COCO_citypersons
 from eval_MR_multisetup import COCOeval_citypersons
 import os
@@ -23,7 +25,7 @@ annType = 'bbox'      #specify type here
 # print('Running demo for *%s* results.'%(annType))
 # iterations = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
 iterations = [30000]
-version = 'v42_04'
+version = 'v16_01'
 
 # iteration = 30000
 for iteration in iterations:

@@ -19,11 +19,11 @@ from utils.cv2_util import vis_bbox, vis_class
 from utils.analysis import evaluateImg, error_type_analysis
 from utils.colormap import colormap
 from utils.box_utils import jaccard
-
+from utils import boxes
 sys.path.insert(0, '../evaluation/eval_script')
 
 from coco_citypersons import COCO_citypersons
-import tlutils
+# import tlutils
 
 
 def draw_bbox_on_image(im, dt, scores, proposals, objectness, gt, gt_ignore, color, dt_error_type,
@@ -43,8 +43,8 @@ def draw_bbox_on_image(im, dt, scores, proposals, objectness, gt, gt_ignore, col
             im = vis_bbox(im, bbox, color._BLUE, thick=linewidth)
     for bbox in gt:
         im = vis_bbox(im, bbox, color._GREEN, thick=linewidth)
-    for bbox in gt_ignore:
-        im = vis_bbox(im, bbox, color._YELLOW, thick=linewidth)
+    # for bbox in gt_ignore:
+    #     im = vis_bbox(im, bbox, color._YELLOW, thick=linewidth)
     for i, bbox in enumerate(dt):
         if scores[i] > score_threshold:
             if dt_error_type[i] == -1:
@@ -120,7 +120,7 @@ def main():
     # cfg_file = "e2e_faster_rcnn_R_50_C4_1x_{}_citypersons_{}".format(GPU, version)
     cfg_file = 'v51_14'
     # dt_file = os.path.join(project_dir, "res/val/{}/{}/{}/bbox.json".format(cfg_file, val_dataset, iteration))
-    dt_file = os.path.join(project_dir, "res/val/{}/bbox.json".format(cfg_file))
+    dt_file = os.path.join(project_dir, "res/val/{}/bbox_new.json".format(cfg_file))
     # root = '/media/tianliang/Cloud/PyTorch_Projects/maskrcnn-benchmark_visible_rate/Output/inference'
     gt_file = os.path.join(project_dir, 'evaluation/val_gt.json')
     # gt_file = os.path.join(project_dir, 'json_annotations/citypersons_o20h50_val.json')
@@ -191,8 +191,8 @@ def main():
                 objectness = np.array(objectness)
             # if dt_xywh.shape[0] == 0 or gt_xywh.shape[0] == 0:
             #     continue
-            dt = tlutils.utils.boxes.xywh_to_xyxy(dt_xywh)
-            gt = tlutils.utils.boxes.xywh_to_xyxy(gt_xywh)
+            dt = boxes.xywh_to_xyxy(dt_xywh)
+            gt = boxes.xywh_to_xyxy(gt_xywh)
             ious = jaccard(torch.tensor(dt).float(), torch.tensor(gt).float())
             ious = ious.numpy()
 

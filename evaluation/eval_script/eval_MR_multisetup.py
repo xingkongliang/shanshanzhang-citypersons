@@ -435,6 +435,7 @@ class COCOeval_citypersons:
         K           = len(p.catIds) if p.useCats else 1
         M           = len(p.maxDets)
         ys = -np.ones((T,R,K,M)) # -1 for the precision of absent
+        ys_true_positives = -np.ones((T, R, K, M))
         ys_double_detections_improvement = -np.ones((T, R, K, M))  # -1 for the precision of absent
         ys_crowded_error_improvement = -np.ones((T, R, K, M))  # -1 for the precision of absent
         ys_larger_bbs_error_improvement = -np.ones((T, R, K, M))  # -1 for the precision of absent
@@ -447,6 +448,7 @@ class COCOeval_citypersons:
         ys_body_parts_error_ae = -np.ones((T,1,K,M))
         ys_background_error_ae = -np.ones((T,1,K,M))
 
+        ys_accuracy = -np.ones((T, RECALL, K, M))
         ys_double_detections_error = -np.ones((T,RECALL,K,M))
         ys_crowded_error = -np.ones((T,RECALL,K,M))
         ys_larger_bbs_error = -np.ones((T,RECALL,K,M))
@@ -497,7 +499,8 @@ class COCOeval_citypersons:
                 others_error = dt_error_type == 5
 
                 gtIg = np.concatenate([e['gtIgnore'] for e in E])
-                npig = np.count_nonzero(gtIg == 0)
+                npig = np.count_nonzero(gtIg == 0)  # 总共有 npig 个目标样本
+                print("The number of samples: ", npig)
                 if npig == 0:
                     continue
                 tps = np.logical_and(dtm, np.logical_not(dtIg))
@@ -598,7 +601,7 @@ class COCOeval_citypersons:
                                                                  tp_larger_bbs_improvement_sum,
                                                                  tp_body_parts_improvement_sum,
                                                                  tp_background_improvement_sum)):
-                    tp = np.array(tp)
+                    tp = np.array(tp)  # the number of true positive
                     fppi = np.array(fp)/I0
                     fppi_double_detections_improvement = np.array(fp_double_detections_improvement) / I0
                     fppi_crowded_improvement = np.array(fp_crowded_improvement) / I0
@@ -625,6 +628,7 @@ class COCOeval_citypersons:
                     # recall_body_parts_improvement[recall_body_parts_improvement > 1] = 0.99
                     # recall_background_improvement[recall_background_improvement > 1] = 0.99
 
+                    accuracy = tp / (tp + fp)
                     double_detections_error_rate = double_detections_error / fp  # (tp+fp)
                     crowded_error_rate = crowded_error / fp
                     larger_bbs_error_rate = larger_bbs_error / fp
@@ -638,11 +642,13 @@ class COCOeval_citypersons:
                     background_error_ae = self.calc_detection_voc_ae([background_error_rate], [recall], use_07_metric=True)
 
                     q = np.zeros((R,)).tolist()
+                    q_recall_number = np.zeros((R,)).tolist()
                     q_double_detections_error_improvement = np.zeros((R,)).tolist()
                     q_crowded_error_improvement = np.zeros((R,)).tolist()
                     q_larger_bbs_error_improvement = np.zeros((R,)).tolist()
                     q_body_parts_error_improvement = np.zeros((R,)).tolist()
                     q_background_error_improvement = np.zeros((R,)).tolist()
+                    q_accuracy = np.zeros((RECALL,)).tolist()
                     q_double_detections_error = np.zeros((RECALL,)).tolist()
                     q_crowded_error = np.zeros((RECALL,)).tolist()
                     q_larger_bbs_error = np.zeros((RECALL,)).tolist()
@@ -715,6 +721,7 @@ class COCOeval_citypersons:
                     try:
                         for ri, pi in enumerate(inds):
                             q[ri] = recall[pi]
+                            q_recall_number[ri] = tp[pi]
                         for ri, pi in enumerate(inds_double_detections_improvement):
                             q_double_detections_error_improvement[ri] = recall_double_detections_improvement[pi]
                         for ri, pi in enumerate(inds_crowded_improvement):
@@ -726,6 +733,7 @@ class COCOeval_citypersons:
                         for ri, pi in enumerate(inds_background_improvement):
                             q_background_error_improvement[ri] = recall_background_improvement[pi]
                         for ri, pi in enumerate(inds_recall):
+                            q_accuracy[ri] = accuracy[pi]
                             q_double_detections_error[ri] = double_detections_error[pi]
                             q_crowded_error[ri] = crowded_error[pi]
                             q_larger_bbs_error[ri] = larger_bbs_error[pi]
@@ -734,6 +742,7 @@ class COCOeval_citypersons:
                     except:
                         pass
                     ys[t,:,k,m] = np.array(q)
+                    ys_true_positives[t, :, k, m] = np.array(q_recall_number)
                     ys_double_detections_improvement[t, :, k, m] = np.array(q_double_detections_error_improvement)
                     ys_crowded_error_improvement[t, :, k, m] = np.array(q_crowded_error_improvement)
                     ys_larger_bbs_error_improvement[t, :, k, m] = np.array(q_larger_bbs_error_improvement)
@@ -746,6 +755,7 @@ class COCOeval_citypersons:
                     ys_body_parts_error_ae[t,:,k,m] = np.array(body_parts_error_ae)
                     ys_background_error_ae[t,:,k,m] = np.array(background_error_ae)
 
+                    ys_accuracy[t, :, k, m] = np.array(q_accuracy)
                     ys_double_detections_error[t,:,k,m] = np.array(q_double_detections_error)
                     ys_crowded_error[t,:,k,m] = np.array(q_crowded_error)
                     ys_larger_bbs_error[t,:,k,m] = np.array(q_larger_bbs_error)
@@ -755,7 +765,8 @@ class COCOeval_citypersons:
             'params': p,
             'counts': [T, R, K, M],
             'date': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'TP':   ys,
+            'TP':   ys,  # recall
+            'true_positives': ys_true_positives,
             'double_detections_improvement': ys_double_detections_improvement,
             'crowded_error_improvement': ys_crowded_error_improvement,
             'larger_bbs_error_improvement': ys_larger_bbs_error_improvement,
@@ -766,6 +777,7 @@ class COCOeval_citypersons:
             'larger_bbs_error_ae': ys_larger_bbs_error_ae,
             'body_parts_error_ae': ys_body_parts_error_ae,
             'background_error_ae': ys_background_error_ae,
+            'accuracy': ys_accuracy,
             'double_detections_error': ys_double_detections_error,
             'crowded_error': ys_crowded_error,
             'larger_bbs_error': ys_larger_bbs_error,
@@ -783,6 +795,10 @@ class COCOeval_citypersons:
         def _summarize(iouThr=None, maxDets=100 ):
             p = self.params
             iStr = " {:<18} {} @ {:<18} [ IoU={:<9} | height={:>6s} | visibility={:>6s} ] = {:0.2f}%"
+            iStr_accuracy = " {:<18} {} @ {:<18}] = {:>5}% | " \
+                         "{:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}"
+            iStr_truepositives = " {:<18} {} @ {:<18}] = {:>5}% | " \
+                         "{:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d}"
             iStr_error = " {:<18} {} @ {:<18}] = {:>5}% | " \
                          "{:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d} {:4d}"
             titleStr = 'Average Miss Rate'
@@ -797,6 +813,7 @@ class COCOeval_citypersons:
 
             # dimension of precision: [TxRxKxAxM]
             s = self.eval['TP']
+            true_positives = self.eval['true_positives']
             double_detections_improvement = self.eval['double_detections_improvement']
             crowded_error_improvement = self.eval['crowded_error_improvement']
             larger_bbs_error_improvement = self.eval['larger_bbs_error_improvement']
@@ -809,6 +826,7 @@ class COCOeval_citypersons:
             body_parts_error_ae = self.eval['body_parts_error_ae']
             background_error_ae = self.eval['background_error_ae']
 
+            accuracy = self.eval['accuracy']
             double_detections_error = self.eval['double_detections_error']
             crowded_error = self.eval['crowded_error']
             larger_bbs_error = self.eval['larger_bbs_error']
@@ -832,6 +850,8 @@ class COCOeval_citypersons:
                 body_parts_error_rate = body_parts_error_ae[t]
                 background_error_rate = background_error_ae[t]
 
+                true_positives = true_positives[t]
+                accuracy = accuracy[t]
                 double_detections_error = double_detections_error[t]
                 crowded_error = crowded_error[t]
                 larger_bbs_error = larger_bbs_error[t]
@@ -851,6 +871,8 @@ class COCOeval_citypersons:
             body_parts_error_rate = body_parts_error_rate[:, :, :, mind]
             background_error_rate = background_error_rate[:, :, :, mind]
 
+            true_positives = true_positives[:,:,:,mind]
+            accuracy = accuracy[:, :, :, mind]
             double_detections_error = double_detections_error[:,:,:,mind]
             crowded_error = crowded_error[:, :, :, mind]
             larger_bbs_error = larger_bbs_error[:, :, :, mind]
@@ -863,6 +885,8 @@ class COCOeval_citypersons:
             body_parts_error_rate = body_parts_error_rate[body_parts_error_rate > -1]
             background_error_rate = background_error_rate[background_error_rate > -1]
 
+            true_positives = true_positives[true_positives > -1].astype(np.int)
+            accuracy = accuracy[accuracy > -1].astype(np.float)
             double_detections_error = double_detections_error[double_detections_error > -1].astype(np.int)
             crowded_error = crowded_error[crowded_error > -1].astype(np.int)
             larger_bbs_error = larger_bbs_error[larger_bbs_error > -1].astype(np.int)
@@ -885,7 +909,11 @@ class COCOeval_citypersons:
 
             out = [iStr.format(titleStr, typeStr,setupStr, iouStr, heightStr, occlStr, mean_s*100)]
             if show_error_detial:
-                out.extend([iStr_error.format("Improve double", "(MR)", setupStr,
+                out.extend([iStr_accuracy.format("Accuracy", "(MR)", setupStr,
+                                              str("%.2f" % (0 * 100)), *[i*100 for i in accuracy]),
+                           iStr_truepositives.format("True positives", "(MR)", setupStr,
+                                              str("%.2f" % (0 * 100)), *[i for i in true_positives]),
+                           iStr_error.format("Improve double", "(MR)", setupStr,
                                               str("%.2f" % (mean_double_detections_improvement * 100)), *[i for i in double_detections_error]),
                            iStr_error.format("Improve crowded", "(MR)", setupStr,
                                              str("%.2f" % (mean_crowded_error_improvement * 100)), *[i for i in crowded_error]),
